@@ -1,24 +1,20 @@
 import { CacheModule } from '@nestjs/cache-manager';
-import {
-  Module,
-  MiddlewareConsumer,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AppBaseController } from './app.base.controller';
-import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { redisConfig, setupConfig } from 'src/configs/app';
 import { DatabaseModule } from 'src/database/database.module';
-import { AppService } from './app.service';
-import { RedisCacheModule } from 'src/modules/cache/redis-cache.module';
 import { ApiKeyMiddleware } from 'src/middlewares/api-key.middleware';
+import { RedisCacheModule } from 'src/modules/cache/redis-cache.module';
+import { AppBaseController } from './app.base.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      load: [setupConfig, redisConfig],
+      envFilePath: [`env/.env.${process.env.NODE_ENV || 'local'}`],
     }),
     CacheModule.registerAsync({
       isGlobal: true,

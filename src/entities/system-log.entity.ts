@@ -1,7 +1,7 @@
 // entities/system-log.entity.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Base } from './base.entity';
 import { COLLECTION_KEYS } from 'src/database/collections';
+import { Base } from './base.entity';
 
 export enum SystemLogType {
   UserStatistic = 'USER_STATISTIC',

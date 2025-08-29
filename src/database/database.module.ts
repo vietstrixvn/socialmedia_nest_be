@@ -1,6 +1,6 @@
-import { Module, Logger } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const uri = configService.get<string>('DATABASE_URL');
+        Logger.log(`👉 DATABASE_URL = ${uri}`, 'Config');
 
         return {
           uri,

@@ -6,8 +6,8 @@ export abstract class Base {
   _id: string;
 
   @Prop({ default: () => new Date() })
-  readonly createdAt!: Date;
+  readonly created_at!: Date;
 
   @Prop({ default: () => new Date() })
-  readonly updatedAt!: Date;
+  readonly updated_at!: Date;
 }

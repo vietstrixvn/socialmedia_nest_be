@@ -5,7 +5,7 @@ export class Pagination<PaginationEntity> {
   public pagination: {
     total_page: number;
     page_size: number;
-    current_page: number;
+    page: number;
     total: number;
   };
 
@@ -14,7 +14,7 @@ export class Pagination<PaginationEntity> {
     this.pagination = {
       total_page: paginationResults.total_page,
       page_size: paginationResults.page_size,
-      current_page: paginationResults.current_page,
+      page: paginationResults.page,
       total: paginationResults.total,
     };
   }
