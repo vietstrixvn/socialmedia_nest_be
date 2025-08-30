@@ -9,10 +9,10 @@ import { PostEntity } from './post.entity';
 @Schema()
 export class ResultEntity extends Base {
   @Prop({ type: Types.ObjectId, ref: PostEntity.name, required: true })
-  post_id: Types.ObjectId;
+  post: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: PlatformEntity.name, required: true })
-  platform_id: Types.ObjectId;
+  platform: Types.ObjectId;
 
   @Prop({ default: false })
   success: boolean;

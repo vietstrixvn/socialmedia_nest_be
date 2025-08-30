@@ -8,4 +8,5 @@ export const COLLECTION_KEYS = {
   SYSTEMLOGS: process.env.SYSTEMLOGS_COLLECTION || 'system_logs',
   SCHEDULED: process.env.SCHEDULED_TASK_COLLECTION || 'scheduled',
   RESULT: process.env.RESULT_TASK_COLLECTION || 'results',
+  CREDENTIAL: process.env.CREDENTIAL_COLLECTION || 'credentials',
 };

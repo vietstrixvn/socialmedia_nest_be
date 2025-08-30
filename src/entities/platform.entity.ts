@@ -5,7 +5,7 @@ import { Base } from './base.entity';
 
 @Schema()
 export class PlatformEntity extends Base {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   name: string;
 
   @Prop({ default: false })
