@@ -1,5 +1,4 @@
 // src/types/express.d.ts
-import { UserDocument } from '../entities/user.entity';
 
 declare global {
   namespace Express {

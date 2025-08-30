@@ -5,7 +5,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { redisConfig, setupConfig } from 'src/configs/app';
 import { DatabaseModule } from 'src/database/database.module';
 import { ApiKeyMiddleware } from 'src/middlewares/api-key.middleware';
+import { AuthModule } from 'src/modules/auth/auth.module';
 import { RedisCacheModule } from 'src/modules/cache/redis-cache.module';
+import { UserModule } from 'src/modules/user/user.module';
 import { AppBaseController } from './app.base.controller';
 import { AppService } from './app.service';
 
@@ -32,6 +34,9 @@ import { AppService } from './app.service';
     DatabaseModule,
     ScheduleModule.forRoot(),
     RedisCacheModule,
+
+    AuthModule,
+    UserModule,
   ],
   controllers: [AppBaseController],
   providers: [

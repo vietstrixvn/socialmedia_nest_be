@@ -7,4 +7,5 @@ export const COLLECTION_KEYS = {
   USER: process.env.USER_COLLECTION || 'users',
   SYSTEMLOGS: process.env.SYSTEMLOGS_COLLECTION || 'system_logs',
   SCHEDULED: process.env.SCHEDULED_TASK_COLLECTION || 'scheduled',
+  RESULT: process.env.RESULT_TASK_COLLECTION || 'results',
 };

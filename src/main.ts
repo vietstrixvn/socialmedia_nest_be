@@ -1,9 +1,10 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 // Change the import style for cookie-parser
 const cookieParser = require('cookie-parser');
+const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,6 +14,11 @@ async function bootstrap() {
   const env = configService.get<string>('setup.env');
 
   app.use(cookieParser());
+
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

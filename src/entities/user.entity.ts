@@ -6,27 +6,25 @@ import { Provider } from 'src/common/enums/provider.enum';
 import { Role } from 'src/common/enums/role.enum';
 import { Base } from './base.entity';
 
-export type UserDocument = User & Document;
-
 @Schema()
-export class User extends Base {
+export class UserEntity extends Base {
   @Prop({ required: false })
-  first_name?: string;
+  firstName?: string;
 
-  @Prop({ required: true })
-  last_name: string;
+  @Prop()
+  lastName: string;
 
   @Prop({ unique: true })
   email: string;
 
   @Prop({ unique: true, sparse: true })
-  username?: string;
+  readonly username?: string;
 
   @Prop({ nullable: true })
   avatarUrl: string;
 
-  @Prop()
-  password: string;
+  @Prop({ required: false })
+  password?: string;
 
   @Prop({
     type: String,
@@ -42,31 +40,56 @@ export class User extends Base {
   })
   provider: Provider;
 
-  @Prop({ required: false })
+  @Prop({ required: false, select: false })
   providerId?: string;
 
+  @Prop({ default: true })
+  isActive!: boolean;
+
   @Prop({ required: false })
-  lastLoginAt?: Date;
+  lastLogin?: Date;
 
   @Prop({ type: Boolean, default: false })
   isVerified: boolean;
+
+  @Prop({ required: false, unique: true, sparse: true })
+  readonly phone_number!: string;
+
+  async comparePassword(attempt: string): Promise<boolean> {
+    if (!attempt || !this.password) return false;
+    return argon2.verify(this.password, attempt);
+  }
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = SchemaFactory.createForClass(UserEntity);
 UserSchema.set('collection', 'users');
 
-// Hash password trước khi save
 UserSchema.pre<UserDocument>('save', async function (next) {
-  if (this.isModified('password')) {
+  if (this.isModified('password') && this.password) {
     this.password = await argon2.hash(this.password);
   }
   next();
 });
 
-// Thêm method comparePassword
 UserSchema.methods.comparePassword = async function (
   attempt: string,
 ): Promise<boolean> {
-  if (!attempt || !this.password) return false;
+  if (!attempt || !this.password) return false; // nếu user social login thì auto false
   return argon2.verify(this.password, attempt);
 };
+
+export interface UserDocument extends Document {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string;
+  username: string;
+  email: string;
+  phone_number: string;
+  password?: string | null;
+  lastLogin: Date;
+  isActive: boolean;
+  provider: Provider;
+  providerId?: string;
+  comparePassword(attempt: string): Promise<boolean>;
+}

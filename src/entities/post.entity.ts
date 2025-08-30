@@ -5,7 +5,7 @@ import { Base } from './base.entity';
 import { PlatformEntity } from './platform.entity';
 import { ScheduleEntity } from './schedule.entity';
 import { Status } from './system-log.entity';
-import { User } from './user.entity';
+import { UserEntity } from './user.entity';
 
 @Schema()
 export class PostEntity extends Base {
@@ -18,7 +18,7 @@ export class PostEntity extends Base {
   @Prop({ enum: Status, default: Status.Pending })
   status: Status;
 
-  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: UserEntity.name, required: true })
   created_by: Types.ObjectId;
 
   @Prop({ default: 0 })
@@ -26,9 +26,6 @@ export class PostEntity extends Base {
 
   @Prop({ type: [Types.ObjectId], ref: PlatformEntity.name, required: false })
   platforms?: Types.ObjectId[];
-
-  //   @Prop({ required: false })
-  //   scheduled_at?: Date;
 
   @Prop({ type: [Types.ObjectId], ref: ScheduleEntity.name })
   schedules?: Types.ObjectId[];
