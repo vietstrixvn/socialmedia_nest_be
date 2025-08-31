@@ -1,6 +1,6 @@
 // import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 // import { SystemLogService } from './system-log.service';
-// import { RolesGuard } from '../auth/guards/RolesGuard';
+// // import { RolesGuard } from '../auth/guards/RolesGuard';
 // import { JwtAuthGuard } from '../../common/guard/jwt-auth.guard';
 // import { Roles } from '../../common/decorators/roles.decorator';
 // import { Role } from '../../common/enums/role.enum';
@@ -12,8 +12,8 @@
 //   constructor(private readonly systemLogService: SystemLogService) {}
 
 //   @Get()
-//   @UseGuards(JwtAuthGuard, RolesGuard)
-//   @Roles(Role.Admin)
+//   // @UseGuards(JwtAuthGuard, RolesGuard)
+//   // @Roles(Role.Admin)
 //   async getLogs(
 //     @Query('type') type?: SystemLogType,
 //     @Query('page') page = 1,

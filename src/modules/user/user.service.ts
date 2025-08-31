@@ -11,8 +11,8 @@ import {
   CreateUserGithubDto,
   CreateUserGoogleDto,
   CreateUserLocalDto,
-} from './dtos/create-user.dto';
-import { UpdateUserDto } from './dtos/update-user.dto';
+} from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UserListData } from './responeses/list.reponse';
 
 @Injectable()
@@ -70,6 +70,7 @@ export class UserService {
         // this.redisCacheService.delByPattern('register*'),
       ]);
     } catch (error) {
+      // Xử lý lỗi gửi email hoặc reset Redis nếu cần thiết
       console.error('Error occurred during async operations', error);
     }
     return await user.save();
@@ -106,7 +107,9 @@ export class UserService {
   async findOne(_id: string) {
     return this.userModel
       .findOne({ _id })
-      .select('_id firstName lastName avatarUrl  isActive username email');
+      .select(
+        '_id firstName lastName avatarUrl hashedRefreshToken  isActive isBlocked username email',
+      );
   }
 
   update(_id: string, updateUserDto: UpdateUserDto) {
@@ -115,6 +118,21 @@ export class UserService {
 
   remove(_id: string) {
     return `This action removes a #${_id} user`;
+  }
+
+  async addOwnedProperty(userId: string, propertyId: string) {
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $addToSet: { owned_properties: propertyId } },
+    );
+  }
+
+  async removeOwnedProperty(userId: string, propertyId: string) {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { $pull: { owned_properties: propertyId } },
+      { new: true },
+    );
   }
 
   async getAllUsers(
@@ -162,7 +180,7 @@ export class UserService {
     const users = await this.userModel
       .find(filter)
       .select(
-        '_id firstName lastName username email phone_number isActive  provider providerId  createdAt updatedAt avatarUrl',
+        '_id firstName lastName username email phone_number isActive isBlocked provider providerId account_type createdAt updatedAt avatarUrl',
       )
       .skip((page - 1) * limit)
       .limit(limit)
@@ -180,8 +198,10 @@ export class UserService {
         lastName: user.lastName,
         isActive: user.isActive,
         avatarUrl: user.avatarUrl,
+        isBlocked: user.isBlocked,
         provider: user.provider,
         providerId: user.providerId,
+        account_type: user.iaccount_typesBlocked,
         lastLogin: user.lastLogin,
         createdAt: new Date(user.createdAt),
         updatedAt: new Date(user.updatedAt),
@@ -193,7 +213,7 @@ export class UserService {
       total,
       total_page: Math.ceil(total / limit),
       page_size: limit,
-      page: page,
+      current_page: page,
     });
 
     await this.redisCacheService.set(cacheKey, result, 3600).catch(() => null);

@@ -4,9 +4,3 @@ export interface RateLimitInfo {
   violations: number;
   banUntil?: number;
 }
-
-export interface BaseType {
-  createdAt?: Date;
-  updatedAt?: Date;
-  _id?: string;
-}

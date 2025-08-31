@@ -1,68 +1,83 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as argon2 from 'argon2';
-import { Document } from 'mongoose';
-
+import { Document, SchemaTypes, Types } from 'mongoose';
+import { UserStatus } from 'src/common';
 import { Provider } from 'src/common/enums/provider.enum';
-import { Role } from 'src/common/enums/role.enum';
+import { COLLECTION_KEYS } from 'src/database/collections';
 import { Base } from './base.entity';
+import { PropertyEntity } from './property.entity';
 
+// Definition of User class
 @Schema()
 export class UserEntity extends Base {
-  @Prop({ required: false })
-  firstName?: string;
+  @Prop()
+  firstName: string;
 
   @Prop()
   lastName: string;
 
-  @Prop({ unique: true })
-  email: string;
+  @Prop()
+  avatarUrl?: string;
+
+  @Prop()
+  timezone?: string;
+
+  @Prop({ default: () => new Date() })
+  lastLogin: Date;
 
   @Prop({ unique: true, sparse: true })
   readonly username?: string;
 
-  @Prop({ nullable: true })
-  avatarUrl: string;
+  @Prop({ unique: true })
+  readonly email!: string;
 
-  @Prop({ required: false })
+  @Prop()
+  readonly phone_number!: string;
+
+  @Prop({ required: false, select: false })
   password?: string;
+
+  @Prop({ default: true })
+  isActive!: boolean;
+
+  @Prop({ default: false })
+  isBlocked!: boolean;
 
   @Prop({
     type: String,
-    enum: Role,
-    default: Role.Manager,
+    enum: UserStatus,
+    default: UserStatus.FREE,
   })
-  role: Role;
+  account_type!: UserStatus;
 
   @Prop({
     type: String,
     enum: Provider,
     default: Provider.Local,
   })
-  provider: Provider;
+  provider!: Provider;
 
   @Prop({ required: false, select: false })
   providerId?: string;
 
-  @Prop({ default: true })
-  isActive!: boolean;
+  @Prop({
+    type: [String],
+    ref: PropertyEntity.name,
+  })
+  owned_properties: string[];
 
-  @Prop({ required: false })
-  lastLogin?: Date;
+  @Prop({
+    type: [{ type: SchemaTypes.ObjectId, ref: PropertyEntity.name }],
+  })
+  member_properties: PropertyEntity[] | Types.ObjectId[];
 
-  @Prop({ type: Boolean, default: false })
-  isVerified: boolean;
-
-  @Prop({ required: false, unique: true, sparse: true })
-  readonly phone_number!: string;
-
-  async comparePassword(attempt: string): Promise<boolean> {
-    if (!attempt || !this.password) return false;
-    return argon2.verify(this.password, attempt);
-  }
+  // True in dev
+  @Prop({ default: false })
+  verified: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserEntity);
-UserSchema.set('collection', 'users');
+UserSchema.set('collection', COLLECTION_KEYS.USER);
 
 UserSchema.pre<UserDocument>('save', async function (next) {
   if (this.isModified('password') && this.password) {
@@ -89,7 +104,11 @@ export interface UserDocument extends Document {
   password?: string | null;
   lastLogin: Date;
   isActive: boolean;
+  isBlocked: boolean;
+  account_type: UserStatus;
   provider: Provider;
   providerId?: string;
+  owned_properties: (string | Types.ObjectId)[];
+  member_properties: (string | Types.ObjectId)[];
   comparePassword(attempt: string): Promise<boolean>;
 }

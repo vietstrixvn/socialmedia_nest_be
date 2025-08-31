@@ -1,5 +1,5 @@
 // redis-client.provider.ts
-import { Injectable, Provider } from '@nestjs/common';
+import { Injectable, Logger, Provider } from '@nestjs/common';
 import Redis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 
@@ -23,16 +23,12 @@ export class RedisClientProvider {
         db: redisDb,
       });
 
-      console.log(
-        `Redis Client connected to ${redisHost}:${redisPort}, DB: ${redisDb}`,
-      );
-
       this.redisClient.on('connect', () => {
-        console.log('Successfully connected to Redis!');
+        Logger.debug('Successfully connected to Redis!');
       });
 
       this.redisClient.on('error', (err) => {
-        console.error('Redis connection error:', err);
+        Logger.error('Redis connection error:', err);
       });
     }
 
@@ -55,17 +51,12 @@ export const redisClientProvider: Provider = {
       db: redisDb,
     });
 
-    console.log(
-      `Redis Client connected to ${redisHost}:${redisPort}, DB: ${redisDb}`,
-    );
-
     redisClient.on('connect', () => {
-      console.log('Successfully connected to Redis!');
+      Logger.debug('[Redis] Successfully connected to Redis!');
     });
 
-    // Log lỗi khi kết nối gặp sự cố
     redisClient.on('error', (err) => {
-      console.error('Redis connection error:', err);
+      console.error('[Redis] Redis connection error:', err);
     });
 
     return redisClient;

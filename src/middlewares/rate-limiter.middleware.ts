@@ -5,17 +5,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-
-interface RateLimitInfo {
-  count: number;
-  expiresAt: number;
-  violations: number;
-  banUntil?: number;
-}
+import { RateLimitInfo } from 'src/types/types';
 
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
-  private readonly windowMs = 5 * 1000; // 1s
+  private readonly windowMs = 5 * 1000;
   private readonly maxRequests = 10;
   private readonly ipStore = new Map<string, RateLimitInfo>();
 
@@ -24,7 +18,6 @@ export class RateLimitMiddleware implements NestMiddleware {
     const now = Date.now();
     const current = this.ipStore.get(ip);
 
-    // Nếu đang bị ban
     if (current?.banUntil && current.banUntil > now) {
       const retryAfter = Math.ceil((current.banUntil - now) / 1000);
       throw new HttpException(
@@ -34,7 +27,6 @@ export class RateLimitMiddleware implements NestMiddleware {
     }
 
     if (!current || current.expiresAt < now) {
-      // Reset count và hết hạn nếu timeout
       this.ipStore.set(ip, {
         count: 1,
         expiresAt: now + this.windowMs,
@@ -46,13 +38,12 @@ export class RateLimitMiddleware implements NestMiddleware {
       if (current.count > this.maxRequests) {
         current.violations += 1;
 
-        // Thời gian ban = 2^violation * 1s, tối đa 1h
         const banTime = Math.min(
           2 ** current.violations * 1000,
           60 * 60 * 1000,
         );
         current.banUntil = now + banTime;
-        current.count = 0; // reset count khi ban
+        current.count = 0;
 
         this.ipStore.set(ip, current);
 

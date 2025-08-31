@@ -1,7 +1,11 @@
 export interface UserData {
-  _id: string;
+  id: string;
   username: string;
   firstName: string;
   lastName: string;
-  role: string;
+}
+
+export interface UserLiteData {
+  id: string;
+  name: string;
 }

@@ -4,10 +4,10 @@ import { Model } from 'mongoose';
 
 import { PlatformDocument, PlatformEntity } from 'src/entities/platform.entity';
 import { RedisCacheService } from '../cache/redis-cache.service';
-import { UserData } from '../user/responeses/user.response';
 
 import { StatusCode, StatusType } from 'src/common';
 import { toFlatFormDataResponse } from 'src/mappers/platform.mapper';
+import { UserData } from '../super_user/responses/user.interface';
 import { CreatePlatformDto } from './dtos/create-flatform.dto';
 import { CreateFlatformResponse } from './responses/create.response';
 import { PlatformResponse } from './responses/data.response';
@@ -148,7 +148,7 @@ export class PlatformService {
             name: normalizedName,
 
             user: {
-              userId: user._id,
+              id: user._id,
               username: user.username,
               role: user.role,
             },

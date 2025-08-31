@@ -3,12 +3,16 @@ import { Types } from 'mongoose';
 import { COLLECTION_KEYS } from 'src/database/collections';
 import { Base } from './base.entity';
 import { PlatformEntity } from './platform.entity';
+import { PropertyEntity } from './property.entity';
 import { UserEntity } from './user.entity';
 
 @Schema()
 export class CredentialEntity extends Base {
   @Prop({ type: Types.ObjectId, ref: PlatformEntity.name, required: true })
   platform: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: PropertyEntity.name, required: true })
+  property: Types.ObjectId;
 
   @Prop({ required: true })
   apiKey: string;

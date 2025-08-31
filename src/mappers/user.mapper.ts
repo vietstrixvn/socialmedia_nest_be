@@ -1,4 +1,4 @@
-import { Role } from 'src/common/enums/role.enum';
+import { UserDocument } from 'src/entities';
 import { UserListData } from 'src/modules/user/responeses/list.reponse';
 
 export function UserDataResponse(user: Record<string, any>): UserListData {
@@ -11,13 +11,25 @@ export function UserDataResponse(user: Record<string, any>): UserListData {
     avatarUrl: user.avatarUrl ?? '',
     phone_number: user.phone_number ?? '',
     isActive: user.isActive ?? '',
-    role: (user.role as Role) ?? Role,
-    isVerified: user.isVerified ?? false,
+    isBlocked: user.isBlocked ?? '',
     lastLogin: user.createdAt ?? Date(),
+    account_type: user.account_type ?? '',
     password: user.password ?? '',
     provider: user.provider ?? '',
     providerId: user.providerId ?? '',
     createdAt: user.createdAt ?? new Date(),
     updatedAt: user.updatedAt ?? new Date(),
+  };
+}
+
+export interface UserLiteData {
+  id: string;
+  name: string;
+}
+
+export function toUserLite(user: Partial<UserDocument>): UserLiteData {
+  return {
+    id: user._id?.toString() ?? '',
+    name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
   };
 }

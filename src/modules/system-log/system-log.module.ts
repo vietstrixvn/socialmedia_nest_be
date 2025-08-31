@@ -3,7 +3,7 @@
 // import { SystemLogController } from './system-log.controller';
 // import { MongooseModule } from '@nestjs/mongoose';
 // import { SystemLog, SystemLogSchema } from '../../entities/system-log.entity';
-// import { AuthModule } from '../auth/auth.module';
+// // import { AuthModule } from '../auth/auth.module';
 // import { RedisCacheModule } from '../cache/redis-cache.module';
 
 // @Module({
@@ -11,7 +11,7 @@
 //     MongooseModule.forFeature([
 //       { name: SystemLog.name, schema: SystemLogSchema },
 //     ]),
-//     AuthModule,
+//     // AuthModule,
 //     RedisCacheModule,
 //   ],
 //   providers: [SystemLogService],

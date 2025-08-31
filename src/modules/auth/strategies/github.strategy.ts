@@ -1,10 +1,10 @@
 // github.strategy.ts
-import { Inject, Injectable } from '@nestjs/common';
-import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-github2';
-import githubOauthConfig from 'src/configs/github-oauth.config';
+import { Inject, Injectable } from '@nestjs/common';
 import { AuthService } from '../auth.service';
+import githubOauthConfig from 'src/configs/github-oauth.config';
+import { ConfigType } from '@nestjs/config';
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
@@ -22,10 +22,10 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     });
   }
 
-  async validate(profile: any) {
+  async validate(accessToken: string, refreshToken: string, profile: any) {
     console.log({ profile });
 
-    const { id, username, photos, emails } = profile;
+    const { id, username, displayName, photos, emails } = profile;
 
     const user = await this.authService.validateGithubUser({
       email: emails?.[0]?.value,

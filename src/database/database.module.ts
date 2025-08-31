@@ -1,6 +1,6 @@
-import { Logger, Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Module, Logger } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -8,13 +8,12 @@ import { MongooseModule } from '@nestjs/mongoose';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const uri = configService.get<string>('DATABASE_URL');
-        Logger.log(`👉 DATABASE_URL = ${uri}`, 'Config');
 
         return {
           uri,
           connectionFactory: (connection) => {
-            Logger.log('✅ MongoDB connection successful!', 'Mongoose');
-            Logger.log(
+            Logger.debug('✅ MongoDB connection successful!', 'Mongoose');
+            Logger.debug(
               `📦 Connected to DB: ${connection.db.databaseName}`,
               'Mongoose',
             );

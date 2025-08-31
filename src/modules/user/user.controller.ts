@@ -13,16 +13,19 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard, RolesGuard } from 'src/common';
+import { CreateUserLocalDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserService } from './user.service';
+// import { Roles } from 'src/common/decorators/roles.decorator';
 import { Response } from 'express';
-import { JwtAuthGuard, PublicRoute, RolesGuard } from 'src/common';
+import { AdminJwtAuthGuard } from 'src/common/guard/jwt-admin.guard';
 import { logDebug } from 'src/logger/console';
 import { logger } from 'src/logger/logger';
+import { PublicRoute } from '../../common/decorators/public.decorator';
 import { AuthService } from '../auth/auth.service';
-import { CreateUserLocalDto } from './dtos/create-user.dto';
-import { UpdateUserDto } from './dtos/update-user.dto';
-import { UserService } from './user.service';
 
-@Controller({ path: 'user', version: '1' })
+@Controller('user')
 export class UserController {
   private readonly logger = new Logger(UserController.name);
 
@@ -78,14 +81,13 @@ export class UserController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AdminJwtAuthGuard, RolesGuard)
   // @Roles(Role.Admin)
   async getUsers(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('search') searchQuery?: string,
     @Query('page') page: number = 1,
-    // Check to change limit to page_size
     @Query('limit') limit: number = 10,
   ): Promise<any> {
     this.logger.debug('Fetching users with filters:', {

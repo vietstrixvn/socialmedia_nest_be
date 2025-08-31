@@ -11,8 +11,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../../common/guard/jwt-auth.guard';
 
+import { RolesGuard } from 'src/common';
+import { AdminJwtAuthGuard } from 'src/common/guard/jwt-admin.guard';
 import { CreatePlatformDto } from './dtos/create-flatform.dto';
 import { PlatformService } from './platform.service';
 
@@ -31,7 +32,7 @@ export class PlatformController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtAuthGuard, RolesGuard)
   @UseInterceptors(FileInterceptor(''))
   async create(@Body() createFaqDto: CreatePlatformDto, @Req() req) {
     const category = await this.platformService.create(createFaqDto, req.user);
@@ -51,7 +52,7 @@ export class PlatformController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtAuthGuard, RolesGuard)
   async update(
     @Param('id') id: string,
     @Body() updateData: { name: string },

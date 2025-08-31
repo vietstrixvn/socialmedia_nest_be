@@ -1,8 +1,8 @@
 // logger/logger.ts
-import * as fs from 'fs';
-import * as path from 'path';
 import { createLogger, format, transports } from 'winston';
 import 'winston-daily-rotate-file';
+import * as path from 'path';
+import * as fs from 'fs';
 
 const logDir = path.join(__dirname, '..', '..', 'logs');
 if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);

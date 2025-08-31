@@ -1,8 +1,8 @@
+import { UserStatus } from 'src/common';
 import { Provider } from 'src/common/enums/provider.enum';
-import { Role } from 'src/common/enums/role.enum';
-import { BaseType } from 'src/types/types';
 
-export interface UserListData extends BaseType {
+export interface UserListData {
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -10,10 +10,12 @@ export interface UserListData extends BaseType {
   avatarUrl: string;
   phone_number?: string;
   isActive: boolean;
+  isBlocked: boolean;
   lastLogin: Date;
+  account_type: UserStatus;
   provider: Provider;
   providerId: string;
   password?: string;
-  role: Role;
-  isVerified: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

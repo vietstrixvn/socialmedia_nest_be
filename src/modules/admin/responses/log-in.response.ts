@@ -1,5 +1,5 @@
 export interface LogInResponse {
-  id: string;
+  _id: string;
   accessToken: string;
   refreshToken?: string;
 }

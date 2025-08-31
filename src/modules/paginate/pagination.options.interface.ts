@@ -1,4 +1,4 @@
 export interface PaginationOptionsInterface {
-  page_size: number;
+  limit: number;
   page: number;
 }

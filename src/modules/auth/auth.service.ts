@@ -10,18 +10,18 @@ import * as argon2 from 'argon2';
 import { ConfigService, ConfigType } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { UserRole } from 'src/common';
 import { Provider } from 'src/common/enums/provider.enum';
-import { Role } from 'src/common/enums/role.enum';
 import { UserDocument, UserEntity } from 'src/entities/user.entity';
 import { generateTokens } from 'src/middlewares/generateTokens.middleware';
 import {
   CreateUserGithubDto,
   CreateUserGoogleDto,
-} from 'src/modules/user/dtos/create-user.dto';
+} from 'src/modules/user/dto/create-user.dto';
 import { UserService } from 'src/modules/user/user.service';
 import refreshJwtConfig from '../../configs/refresh-jwt.config';
-import { LogInDTO } from './dtos/ log-in.dto';
-import { LogInResponse } from './responses/log-in.response';
+import { LogInDTO } from './dtos/log-in.dto';
+import { LogInResponse } from './responeses/log-in.response';
 import { CurrentUser } from './types/current-user';
 
 @Injectable()
@@ -32,7 +32,7 @@ export class AuthService {
     private readonly configService: ConfigService,
 
     @InjectModel(UserEntity.name)
-    private readonly userModel: Model<UserDocument>, // <-- đúng chỗ rồi nè
+    private readonly userModel: Model<UserDocument>,
 
     private readonly jwtService: JwtService,
 
@@ -61,7 +61,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return { id: user.id };
+    return { id: user._id };
   }
 
   async login(_id: string) {
@@ -81,34 +81,37 @@ export class AuthService {
 
   async userLogin(dto: LogInDTO): Promise<LogInResponse> {
     if (!dto.password || typeof dto.password !== 'string') {
-      throw new BadRequestException('wrong data');
+      throw new BadRequestException('wrong dât');
     }
 
-    const user = await this.userModel
+    const user = (await this.userModel
       .findOne({
         $or: [{ username: dto.username }, { email: dto.username }],
       })
-      .select('+password');
+      .select('+password')) as UserDocument | null;
 
-    // Check user trước khi gọi method
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
+    const isValidPassword = user
+      ? await user.comparePassword(dto.password)
+      : false;
 
-    const isValid = await user.comparePassword(dto.password);
-
-    if (!isValid) {
-      throw new BadRequestException('Wrong password');
+    if (!user || !isValidPassword) {
+      throw new BadRequestException('wrong');
     }
 
     const { accessToken, refreshToken } = await generateTokens(
       user._id.toString(),
-      this.jwtService,
-      this.refreshTokenConfig,
+      this.jwtService, // ← truyền cái này nè
+      this.refreshTokenConfig, // ← và cái này nữa
+    );
+
+    const hashedRefreshToken = await argon2.hash(refreshToken);
+    await this.userService.updateHashedRefreshToken(
+      user._id.toString(),
+      hashedRefreshToken,
     );
 
     return {
-      id: user._id.toString(), // map _id -> id
+      _id: user._id.toString(),
       accessToken,
       refreshToken,
     };
@@ -148,13 +151,13 @@ export class AuthService {
       }
 
       const adminPayload = {
-        username: this.configService.get<string>('USERNAME'),
-        password: this.configService.get<string>('PASSWORD'),
-        email: this.configService.get<string>('EMAIL'),
-        firstName: this.configService.get<string>('FRIST_NAME'),
-        lastName: this.configService.get<string>('LAST_NAME'),
-        phone_number: this.configService.get<string>('TEL'),
-        role: Role.Admin,
+        username: this.configService.get<string>('CUSTOMER_USERNAME'),
+        password: this.configService.get<string>('CUSTOMER_PASSWORD'),
+        email: this.configService.get<string>('CUSTOMER_EMAIL'),
+        firstName: this.configService.get<string>('CUSTOMER_FRIST_NAME'),
+        lastName: this.configService.get<string>('CUSTOMER_LAST_NAME'),
+        phone_number: this.configService.get<string>('CUSTOMER_TEL'),
+        role: UserRole.Owner,
       };
       const user = new this.userModel(adminPayload);
 
@@ -182,6 +185,7 @@ export class AuthService {
       username: user.username,
       email: user.email,
       isActive: user.isActive,
+      isBlocked: user.isBlocked,
     };
     return currentUser;
   }
@@ -201,7 +205,7 @@ export class AuthService {
     // ❗ Tạo mới nếu chắc chắn chưa tồn tại
     return await this.userService.ggCreate({
       ...googleUser,
-      provider: Provider.GG,
+      provider: Provider.Google,
       verified: true,
       providerId: googleUser.sub,
     });
@@ -216,7 +220,7 @@ export class AuthService {
       user = await this.userService.findByEmail(githubUser.email);
 
       // ⚠️ Check nếu user này đã có provider khác (local, Google...) thì không override
-      if (user && user.provider !== Provider.GitHub) {
+      if (user && user.provider !== Provider.Github) {
         throw new UnauthorizedException(
           `Email này đã được đăng ký bằng ${user.provider}, không thể dùng GitHub để đăng nhập.`,
         );
@@ -229,7 +233,7 @@ export class AuthService {
     // ❗ Nếu chắc chắn chưa có, thì tạo mới
     return await this.userService.ghCreate({
       ...githubUser,
-      provider: Provider.GitHub,
+      provider: Provider.Github,
       verified: true,
       providerId: githubUser.providerId,
     });

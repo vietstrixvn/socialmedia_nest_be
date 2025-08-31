@@ -4,27 +4,27 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Logger,
   Post,
   Req,
   Request,
   Res,
+  Logger,
   UseGuards,
 } from '@nestjs/common';
-import { Response } from 'express';
-import { JwtAuthGuard } from 'src/common/guard/jwt-auth.guard';
-import { logDebug } from 'src/logger/console';
-import { logger } from 'src/logger/logger';
-import { PublicRoute } from '../../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
-import { LogInDTO } from './dtos/ log-in.dto';
-import { GithubAuthGuard } from './guards/github-auth/github-auth.guard';
-import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
-import { LogInResponse } from './responses/log-in.response';
+import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
+import { LogInDTO } from './dtos/log-in.dto';
+import { LogInResponse } from './responeses/log-in.response';
+import { Response } from 'express';
+import { PublicRoute } from '../../common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common';
+import { GithubAuthGuard } from './guards/github-auth/github-auth.guard';
+import { logger } from 'src/logger/logger';
+import { logDebug } from 'src/logger/console';
 
-@Controller({ path: 'auth', version: '1' })
+@Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
@@ -44,10 +44,10 @@ export class AuthController {
     return this.authService
       .refreshToken(req.user.id)
       .then(({ accessToken, refreshToken }) => {
-        res.cookie('refreshToken', refreshToken, {
+        res.cookie('refresh_auth_token', refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
         logger.info(
@@ -55,12 +55,12 @@ export class AuthController {
         );
         logDebug('[TOKEN]', accessToken);
 
-        return { accessToken };
+        return { accessToken }; // 👈 chỉ trả accessToken, refresh giữ ở cookie
       });
   }
 
   @PublicRoute()
-  @Post('sign-in')
+  @Post('userLogin')
   @HttpCode(HttpStatus.OK)
   async userLogin(
     @Body() dto: LogInDTO,
@@ -68,12 +68,9 @@ export class AuthController {
   ): Promise<LogInResponse> {
     dto.provider = dto.provider ?? 'local';
 
-    const {
-      id: _id,
-      accessToken,
-      refreshToken,
-    } = await this.authService.userLogin(dto);
-    res.cookie('refreshToken', refreshToken, {
+    const { _id, accessToken, refreshToken } =
+      await this.authService.userLogin(dto);
+    res.cookie('refresh_auth_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -85,11 +82,11 @@ export class AuthController {
     );
     logDebug('[TOKEN]', accessToken);
 
-    return { id: _id, accessToken };
+    return { _id, accessToken };
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('sign-out')
+  @Post('signout')
   signOut(@Req() req) {
     this.authService.signOut(req.user.id);
   }
