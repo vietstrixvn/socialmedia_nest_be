@@ -8,3 +8,8 @@ export interface PlatformResponse {
   maxFileSize: number | null;
   supportedFormats: string[];
 }
+
+export interface PlatformLimitResponse {
+  id: string;
+  name: string;
+}

@@ -18,7 +18,7 @@ export class PropertyEntity extends Base {
   description: string;
 
   @Prop({
-    type: SchemaTypes.ObjectId,
+    type: [String],
     ref: PlatformEntity.name,
     required: false,
   })
@@ -59,8 +59,8 @@ export class PropertyEntity extends Base {
   })
   members: { user: UserEntity | Types.ObjectId; role: UserRole }[];
 
-  @Prop({ type: Types.ObjectId, ref: COLLECTION_KEYS.USER, required: true })
-  owner: Types.ObjectId;
+  @Prop({ type: Object, required: true })
+  owner: any;
 }
 export type PropertyDocument = PropertyEntity & Document;
 export const PropertySchema = SchemaFactory.createForClass(PropertyEntity);

@@ -87,12 +87,17 @@ export class PlatformService {
     }
   }
 
-  async validateFlatform(flatformId: string): Promise<boolean> {
+  async validateFlatform(flatformId: string[]): Promise<boolean> {
     try {
-      const service = await this.platformModel.findById(flatformId).exec();
-      return !!service; // Returns true if service exists, false otherwise
+      const count = await this.platformModel
+        .countDocuments({
+          _id: { $in: flatformId },
+        })
+        .exec();
+
+      return count === flatformId.length;
     } catch (error) {
-      this.logger.error(`Error validating service: ${error.message}`);
+      this.logger.error(`Error validating services: ${error.message}`);
       return false;
     }
   }

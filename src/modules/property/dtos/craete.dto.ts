@@ -11,8 +11,9 @@ export class CreatePropertyDto {
   description?: string;
 
   @IsOptional()
-  @IsString()
-  platform?: string[];
+  @IsArray()
+  @IsString({ each: true })
+  platforms?: string[];
 
   @IsOptional()
   @IsString()

@@ -1,4 +1,3 @@
-import { UserDocument } from 'src/entities';
 import { UserListData } from 'src/modules/user/responeses/list.reponse';
 
 export function UserDataResponse(user: Record<string, any>): UserListData {
@@ -24,12 +23,4 @@ export function UserDataResponse(user: Record<string, any>): UserListData {
 
 export interface UserLiteData {
   id: string;
-  name: string;
-}
-
-export function toUserLite(user: Partial<UserDocument>): UserLiteData {
-  return {
-    id: user._id?.toString() ?? '',
-    name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
-  };
 }

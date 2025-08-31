@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 
 import { RedisCacheService } from '../cache/redis-cache.service';
 
-import { StatusType } from 'src/common';
+import { StatusCode, StatusType } from 'src/common';
 import { PropertyDocument, PropertyEntity } from 'src/entities/property.entity';
 import { buildPropertyFilter } from 'src/helpers/property.helper';
 import { toPropertyDataResponse } from 'src/mappers/property.mapper';
@@ -12,6 +12,7 @@ import { UserLiteData } from 'src/mappers/user.mapper';
 import { buildCacheKey } from 'src/utils/cache-key.util';
 import { Pagination } from '../paginate/pagination';
 import { PaginationOptionsInterface } from '../paginate/pagination.options.interface';
+import { PlatformService } from '../platform/platform.service';
 import { SlugProvider } from '../slug/slug.provider';
 import { UserService } from '../user/user.service';
 import { CreatePropertyDto } from './dtos/craete.dto';
@@ -27,6 +28,8 @@ export class PropertyService {
     @InjectModel(PropertyEntity.name)
     private readonly propertyModel: Model<PropertyDocument>,
     private readonly slugProvider: SlugProvider,
+    private readonly platformService: PlatformService,
+
     private readonly userService: UserService,
     private readonly redisCacheService: RedisCacheService,
   ) {}
@@ -61,6 +64,10 @@ export class PropertyService {
     const properties = await this.propertyModel
       .find(filter)
       .skip((options.page - 1) * options.limit)
+      .populate({
+        path: 'platforms',
+        select: '_id name',
+      })
       .limit(options.limit)
       .sort({ createdAt: -1 })
       .exec();
@@ -92,7 +99,7 @@ export class PropertyService {
     const {
       name,
       description,
-      platform,
+      platforms,
       property_status,
       property_type,
       members,
@@ -102,7 +109,30 @@ export class PropertyService {
       throw new BadRequestException({ message: 'Name is required' });
     }
 
+    if (!platforms)
+      throw new BadRequestException({
+        message: 'Error 3',
+        code: StatusCode.BadRequest,
+      });
+
     const slug = this.slugProvider.generateSlug(name, { unique: true });
+
+    const [exists, isValidPlatform] = await Promise.all([
+      this.propertyModel.findOne({ $or: [{ name }, { slug }] }),
+      this.platformService.validateFlatform(platforms),
+    ]);
+
+    if (exists)
+      throw new BadRequestException({
+        message: 'Error 2',
+        error: 'Error',
+      });
+
+    if (!isValidPlatform)
+      throw new BadRequestException({
+        message: 'Error 1 ',
+        error: 'Error',
+      });
 
     const existingProperty = await this.propertyModel.findOne({
       owner: user.id,
@@ -119,7 +149,7 @@ export class PropertyService {
       name,
       slug,
       description,
-      platform,
+      platforms,
       property_status,
       property_type,
       members,
@@ -144,15 +174,15 @@ export class PropertyService {
     }
   }
 
-  //   async validateFlatform(flatformId: string): Promise<boolean> {
-  //     try {
-  //       const service = await this.propertyModel.findById(flatformId).exec();
-  //       return !!service; // Returns true if service exists, false otherwise
-  //     } catch (error) {
-  //       this.logger.error(`Error validating service: ${error.message}`);
-  //       return false;
-  //     }
+  // async validateFlatform(flatformId: string): Promise<boolean> {
+  //   try {
+  //     const service = await this.propertyModel.findById(flatformId).exec();
+  //     return !!service; // Returns true if service exists, false otherwise
+  //   } catch (error) {
+  //     this.logger.error(`Error validating service: ${error.message}`);
+  //     return false;
   //   }
+  // }
 
   //   async update(
   //     _id: string,

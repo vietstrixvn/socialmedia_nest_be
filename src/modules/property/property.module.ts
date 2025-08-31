@@ -5,6 +5,7 @@ import jwtConfig from 'src/configs/jwt.config';
 import { PropertyEntity, PropertySchema } from 'src/entities/property.entity';
 import { AuthModule } from '../auth/auth.module';
 import { RedisCacheModule } from '../cache/redis-cache.module';
+import { PlatformModule } from '../platform/platform.module';
 import { SlugProvider } from '../slug/slug.provider';
 import { UserModule } from '../user/user.module';
 import { PropertyController } from './property.controller';
@@ -20,6 +21,7 @@ import { PropertyService } from './property.service';
     AuthModule,
     UserModule,
     RedisCacheModule,
+    PlatformModule,
   ],
   controllers: [PropertyController],
   providers: [PropertyService, SlugProvider],
