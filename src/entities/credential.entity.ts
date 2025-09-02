@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { COLLECTION_KEYS } from 'src/database/collections';
+import { addConditionalSelectHook } from '../utils/mongoose-helpers';
 import { Base } from './base.entity';
 import { PlatformEntity } from './platform.entity';
 import { PropertyEntity } from './property.entity';
@@ -11,7 +12,6 @@ export class CredentialEntity extends Base {
     type: Types.ObjectId,
     ref: PlatformEntity.name,
     required: true,
-    unique: true,
   })
   platform: Types.ObjectId;
 
@@ -49,3 +49,11 @@ export class CredentialEntity extends Base {
 export type CredentialDocument = CredentialEntity & Document;
 export const CredentialSchema = SchemaFactory.createForClass(CredentialEntity);
 CredentialSchema.set('collection', COLLECTION_KEYS.CREDENTIAL);
+CredentialSchema.index({ platform: 1, property: 1 }, { unique: true });
+
+addConditionalSelectHook(CredentialSchema, [
+  'apiKey',
+  'apiSecret',
+  'accessToken',
+  'refreshToken',
+]);
