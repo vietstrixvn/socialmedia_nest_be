@@ -42,7 +42,7 @@ export class PropertyService {
   ): Promise<Pagination<PropertyResponse>> {
     const cacheKey = buildCacheKey('properties', {
       page: options.page,
-      limit: options.limit,
+      page_size: options.page_size,
       start: startDate,
       end: endDate,
       owner: ownerId,
@@ -63,12 +63,12 @@ export class PropertyService {
 
     const properties = await this.propertyModel
       .find(filter)
-      .skip((options.page - 1) * options.limit)
+      .skip((options.page - 1) * options.page_size)
       .populate({
         path: 'platforms',
         select: '_id name',
       })
-      .limit(options.limit)
+      .limit(options.page_size)
       .sort({ createdAt: -1 })
       .exec();
 
@@ -79,8 +79,63 @@ export class PropertyService {
     const result = new Pagination<PropertyResponse>({
       results: mappedProperties,
       total,
-      total_page: Math.ceil(total / options.limit),
-      page_size: options.limit,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: options.page_size,
+      current_page: options.page,
+    });
+
+    await this.redisCacheService.set(
+      cacheKey,
+      result,
+      PROPERTY_CACHE_TTL.PROPERTY_LIST,
+    );
+    return result;
+  }
+
+  async adminFindAll(
+    options: PaginationOptionsInterface,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Pagination<PropertyResponse>> {
+    const cacheKey = buildCacheKey('admin_properties', {
+      page: options.page,
+      page_size: options.page_size,
+      start: startDate,
+      end: endDate,
+    });
+
+    const cached =
+      await this.redisCacheService.get<Pagination<PropertyResponse>>(cacheKey);
+
+    if (cached) {
+      this.logger.log(`Cache HIT: ${cacheKey}`);
+      return cached;
+    }
+
+    const filter = {
+      ...buildPropertyFilter({ startDate, endDate }),
+    };
+
+    const properties = await this.propertyModel
+      .find(filter)
+      .skip((options.page - 1) * options.page_size)
+      .populate({
+        path: 'platforms',
+        select: '_id name',
+      })
+      .limit(options.page_size)
+      .sort({ createdAt: -1 })
+      .exec();
+
+    const total = await this.propertyModel.countDocuments(filter);
+
+    const mappedProperties = properties.map(toPropertyDataResponse);
+
+    const result = new Pagination<PropertyResponse>({
+      results: mappedProperties,
+      total,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: options.page_size,
       current_page: options.page,
     });
 
@@ -174,15 +229,15 @@ export class PropertyService {
     }
   }
 
-  // async validateFlatform(flatformId: string): Promise<boolean> {
-  //   try {
-  //     const service = await this.propertyModel.findById(flatformId).exec();
-  //     return !!service; // Returns true if service exists, false otherwise
-  //   } catch (error) {
-  //     this.logger.error(`Error validating service: ${error.message}`);
-  //     return false;
-  //   }
-  // }
+  async validateProperty(propertyId: string): Promise<boolean> {
+    try {
+      const service = await this.propertyModel.findById(propertyId).exec();
+      return !!service; // Returns true if service exists, false otherwise
+    } catch (error) {
+      this.logger.error(`Error validating service: ${error.message}`);
+      return false;
+    }
+  }
 
   //   async update(
   //     _id: string,

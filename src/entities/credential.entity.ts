@@ -4,11 +4,15 @@ import { COLLECTION_KEYS } from 'src/database/collections';
 import { Base } from './base.entity';
 import { PlatformEntity } from './platform.entity';
 import { PropertyEntity } from './property.entity';
-import { UserEntity } from './user.entity';
 
 @Schema()
 export class CredentialEntity extends Base {
-  @Prop({ type: Types.ObjectId, ref: PlatformEntity.name, required: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: PlatformEntity.name,
+    required: true,
+    unique: true,
+  })
   platform: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: PropertyEntity.name, required: true })
@@ -17,8 +21,8 @@ export class CredentialEntity extends Base {
   @Prop({ required: true })
   apiKey: string;
 
-  @Prop({ type: Types.ObjectId, ref: UserEntity.name, required: false })
-  owner?: Types.ObjectId;
+  @Prop({ type: Object, required: true })
+  owner: any;
 
   @Prop({ required: false })
   apiSecret?: string;
@@ -33,7 +37,10 @@ export class CredentialEntity extends Base {
   expiresAt?: Date;
 
   @Prop({ default: true })
-  status: boolean;
+  isActive: boolean;
+
+  @Prop({ type: Object, required: false })
+  metadata?: Record<string, any>;
 
   @Prop({ required: false })
   lastUsedAt?: Date;

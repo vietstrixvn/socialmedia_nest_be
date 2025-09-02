@@ -31,6 +31,24 @@ export class PlatformService {
     return platforms.map(toFlatFormDataResponse);
   }
 
+  async find(propertyId: string, ownerId: string): Promise<PlatformResponse[]> {
+    if (!propertyId) {
+      throw new BadRequestException('propertyId is required');
+    }
+
+    const filter: any = {
+      property: propertyId,
+      owner: ownerId,
+    };
+
+    const platforms = await this.platformModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .exec();
+
+    return platforms.map(toFlatFormDataResponse);
+  }
+
   async create(
     createPlatformDto: CreatePlatformDto,
     user: UserData,
@@ -98,6 +116,16 @@ export class PlatformService {
       return count === flatformId.length;
     } catch (error) {
       this.logger.error(`Error validating services: ${error.message}`);
+      return false;
+    }
+  }
+
+  async validateLimitPlarform(flatformId: string): Promise<boolean> {
+    try {
+      const service = await this.platformModel.findById(flatformId).exec();
+      return !!service; // Returns true if service exists, false otherwise
+    } catch (error) {
+      this.logger.error(`Error validating service: ${error.message}`);
       return false;
     }
   }

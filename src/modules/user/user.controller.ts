@@ -88,14 +88,14 @@ export class UserController {
     @Query('endDate') endDate?: string,
     @Query('search') searchQuery?: string,
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query('page_size') page_size: number = 10,
   ): Promise<any> {
     this.logger.debug('Fetching users with filters:', {
       startDate,
       endDate,
       searchQuery,
       page,
-      limit,
+      page_size,
     });
 
     return this.userService.getAllUsers(
@@ -103,7 +103,7 @@ export class UserController {
       endDate,
       searchQuery,
       page,
-      limit,
+      page_size,
     );
   }
 }

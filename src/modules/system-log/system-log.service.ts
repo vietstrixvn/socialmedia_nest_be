@@ -3,11 +3,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SystemLog, SystemLogType } from '../../entities/system-log.entity';
-import { CreateSystemLogDTO, SystemLogResponse } from './system-log.interface';
+import { buildCacheKey } from '../../utils/cache-key.util';
+import { RedisCacheService } from '../cache/redis-cache.service';
 import { Pagination } from '../paginate/pagination';
 import { PaginationOptionsInterface } from '../paginate/pagination.options.interface';
-import { RedisCacheService } from '../cache/redis-cache.service';
-import { buildCacheKey } from '../../utils/cache-key.util';
+import { CreateSystemLogDTO, SystemLogResponse } from './system-log.interface';
 
 @Injectable()
 export class SystemLogService {
@@ -41,7 +41,7 @@ export class SystemLogService {
 
     const cacheKey = buildCacheKey('logs', {
       page: options.page,
-      limit: options.limit,
+      page_size: options.page_size,
       start: startDate,
       end: endDate,
       type, // Add type to cache key
@@ -56,7 +56,7 @@ export class SystemLogService {
     }
 
     const filter: any = {};
-    const { page, limit } = options;
+    const { page, page_size } = options;
 
     if (startDate && endDate) {
       filter.createdAt = {
@@ -72,8 +72,8 @@ export class SystemLogService {
 
     const logs = await this.systemLogModel
       .find(filter)
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .skip((page - 1) * page_size)
+      .limit(page_size)
       .sort({ createdAt: -1 })
       .lean()
       .exec();
@@ -102,8 +102,8 @@ export class SystemLogService {
     const result = new Pagination<SystemLogResponse>({
       results: mappedLogs,
       total: total,
-      total_page: Math.ceil(total / options.limit),
-      page_size: limit,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: page_size,
       current_page: page,
     });
 

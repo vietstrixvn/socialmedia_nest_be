@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,13 +7,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-import { RolesGuard } from 'src/common';
+import { JwtAuthGuard, RolesGuard } from 'src/common';
 import { AdminJwtAuthGuard } from 'src/common/guard/jwt-admin.guard';
 import { CreatePlatformDto } from './dtos/create-flatform.dto';
 import { PlatformService } from './platform.service';
@@ -27,8 +29,24 @@ export class PlatformController {
   ) {}
 
   @Get()
-  async getCategories(): Promise<any> {
+  @UseGuards(JwtAuthGuard)
+  async getPlatforms(): Promise<any> {
     return this.platformService.findAll();
+  }
+
+  @Get('/auth')
+  @UseGuards(JwtAuthGuard)
+  async getPlatformUser(
+    @Req() req,
+    @Query('propertyId') propertyId?: string,
+  ): Promise<any> {
+    const ownerId = req.user.id;
+
+    if (!propertyId) {
+      throw new BadRequestException('propertyId is required');
+    }
+
+    return this.platformService.find(propertyId, ownerId);
   }
 
   @Post()

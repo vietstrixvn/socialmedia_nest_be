@@ -1,27 +1,27 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserError, UserSuccess } from './superuser.constant';
+import { Role } from '../../common/enums/role.enum';
+import { buildCacheKey } from '../../utils/cache-key.util';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { Pagination } from '../paginate/pagination';
+import { CreateManagerDto } from './dto/create-manager.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import type {
   UserData,
   UserDataResponse,
   UserResponse,
 } from './responses/user.interface';
-import { Role } from '../../common/enums/role.enum';
-import { CreateManagerDto } from './dto/create-manager.dto';
-import { RedisCacheService } from '../cache/redis-cache.service';
-import { buildCacheKey } from '../../utils/cache-key.util';
-import { Pagination } from '../paginate/pagination';
-import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UserError, UserSuccess } from './superuser.constant';
 // import { EmailPasswordService } from 'src/services/email_password.service';
 import { randomBytes } from 'crypto';
-import { VerificationCode } from './interfaces/verification-code.interface';
-import { toDataResponse } from '../../mappers/superuser.mapper';
 import {
   SuperUserDocument,
   SuperUserEntity,
 } from 'src/entities/super.user.entity';
+import { toDataResponse } from '../../mappers/superuser.mapper';
 import { AdminListData } from './interfaces/list.reponse';
+import { VerificationCode } from './interfaces/verification-code.interface';
 
 @Injectable()
 export class SuperUserService {
@@ -43,11 +43,11 @@ export class SuperUserService {
     endDate?: string,
     searchQuery?: string,
     page: number = 1,
-    limit: number = 10,
+    page_size: number = 10,
   ): Promise<Pagination<AdminListData>> {
     const cacheKey = buildCacheKey('users', {
       page,
-      limit,
+      page_size,
       start: startDate,
       end: endDate,
       search: searchQuery || '',
@@ -85,8 +85,8 @@ export class SuperUserService {
       .select(
         '_id firstName lastName username email phone_number isActive  permissions role  account_type createdAt updatedAt',
       )
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .skip((page - 1) * page_size)
+      .limit(page_size)
       .lean();
 
     const total = await this.userModel.countDocuments(filter);
@@ -111,8 +111,8 @@ export class SuperUserService {
     const result = new Pagination<AdminListData>({
       results,
       total,
-      total_page: Math.ceil(total / limit),
-      page_size: limit,
+      total_page: Math.ceil(total / page_size),
+      page_size: page_size,
       current_page: page,
     });
 

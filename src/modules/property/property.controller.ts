@@ -11,7 +11,8 @@ import {
 } from '@nestjs/common';
 
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from 'src/common';
+import { JwtAuthGuard, RolesGuard } from 'src/common';
+import { AdminJwtAuthGuard } from 'src/common/guard/jwt-admin.guard';
 import { CreatePropertyDto } from './dtos/craete.dto';
 import { PropertyService } from './property.service';
 
@@ -26,17 +27,31 @@ export class PropertyController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async get(
+  async getUserProperties(
     @Req() req,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query('page_size') page_size: number = 10,
   ): Promise<any> {
-    const options = { page, limit };
+    const options = { page, page_size };
     const ownerId = req.user.id;
 
     return this.propertyService.findAll(options, ownerId, startDate, endDate);
+  }
+
+  @Get('/admin')
+  @UseGuards(AdminJwtAuthGuard, RolesGuard)
+  async getAdminProperties(
+    @Req() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page: number = 1,
+    @Query('page_size') page_size: number = 10,
+  ): Promise<any> {
+    const options = { page, page_size };
+
+    return this.propertyService.adminFindAll(options, startDate, endDate);
   }
 
   @Post()

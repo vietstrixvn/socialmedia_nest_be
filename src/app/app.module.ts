@@ -8,9 +8,12 @@ import { ApiKeyMiddleware } from 'src/middlewares/api-key.middleware';
 import { AdminModule } from 'src/modules/admin/admin.module';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { RedisCacheModule } from 'src/modules/cache/redis-cache.module';
+import { ContactModule } from 'src/modules/contact/contact.module';
+import { CredentialModule } from 'src/modules/credential/credential.module';
 import { PlatformModule } from 'src/modules/platform/platform.module';
 import { PropertyModule } from 'src/modules/property/property.module';
 import { SuperUserModule } from 'src/modules/super_user/superuser.module';
+import { SystemLogModule } from 'src/modules/system-log/system-log.module';
 import { UserModule } from 'src/modules/user/user.module';
 import { AppBaseController } from './app.base.controller';
 import { AppService } from './app.service';
@@ -43,11 +46,15 @@ import { AppService } from './app.service';
     AdminModule,
     SuperUserModule,
 
+    ContactModule,
+    SystemLogModule,
+
     AuthModule,
     UserModule,
 
     PropertyModule,
     PlatformModule,
+    CredentialModule,
   ],
   controllers: [AppBaseController],
   providers: [

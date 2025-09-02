@@ -1,31 +1,28 @@
 import {
+  BadRequestException,
   Body,
   Controller,
-  Get,
-  Post,
-  Req,
-  Logger,
-  UseGuards,
-  BadRequestException,
-  NotFoundException,
-  Query,
   Delete,
+  Get,
+  Logger,
   Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 
-import { SuperUserService } from './superuser.service';
-import { CreateManagerDto } from './dto/create-manager.dto';
 import { Role } from '../../common/enums/role.enum';
-import { UserResponse } from './responses/user.interface';
+import { CreateManagerDto } from './dto/create-manager.dto';
+import { SuperUserService } from './superuser.service';
 // import { SystemLogService } from '../system-log/system-log.service';
-import { Status, SystemLogType } from '../../entities/system-log.entity';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard, RolesGuard } from 'src/common';
+import { AdminRoles } from 'src/common/decorators/adminRoles.decorator';
+import { AdminJwtAuthGuard } from 'src/common/guard/jwt-admin.guard';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { VerifyCodeDto } from './dto/verify-code.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { AdminRoles } from 'src/common/decorators/adminRoles.decorator';
-import { JwtAuthGuard, RolesGuard } from 'src/common';
-import { AdminJwtAuthGuard } from 'src/common/guard/jwt-admin.guard';
 
 @Controller({ path: 'superuser', version: '1' })
 export class SuperUserController {
@@ -166,14 +163,14 @@ export class SuperUserController {
     @Query('endDate') endDate?: string,
     @Query('search') searchQuery?: string,
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query('limit') page_size: number = 10,
   ): Promise<any> {
     this.logger.debug('Fetching users with filters:', {
       startDate,
       endDate,
       searchQuery,
       page,
-      limit,
+      page_size,
     });
 
     return this.supderUserService.getAllUsers(
@@ -181,7 +178,7 @@ export class SuperUserController {
       endDate,
       searchQuery,
       page,
-      limit,
+      page_size,
     );
   }
 }

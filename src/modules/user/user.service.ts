@@ -140,11 +140,11 @@ export class UserService {
     endDate?: string,
     searchQuery?: string,
     page: number = 1,
-    limit: number = 10,
+    page_size: number = 10,
   ): Promise<Pagination<UserListData>> {
     const cacheKey = buildCacheKey('users', {
       page,
-      limit,
+      page_size,
       start: startDate,
       end: endDate,
       search: searchQuery || '',
@@ -182,8 +182,8 @@ export class UserService {
       .select(
         '_id firstName lastName username email phone_number isActive isBlocked provider providerId account_type createdAt updatedAt avatarUrl',
       )
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .skip((page - 1) * page_size)
+      .limit(page_size)
       .lean();
 
     const total = await this.userModel.countDocuments(filter);
@@ -211,8 +211,8 @@ export class UserService {
     const result = new Pagination<UserListData>({
       results,
       total,
-      total_page: Math.ceil(total / limit),
-      page_size: limit,
+      total_page: Math.ceil(total / page_size),
+      page_size: page_size,
       current_page: page,
     });
 
