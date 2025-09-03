@@ -12,4 +12,5 @@ export const COLLECTION_KEYS = {
   SUPER_USER: process.env.SUPER_USER_COLLECTION || 'super_users',
   PROPERTY: process.env.PROPERTY_COLLECTION || 'properties',
   CONTACT: process.env.CONTACT_COLLECTION || 'contacts',
+  USER_PROPERTY: process.env.USER_PROPERTY_COLLECTION || 'user_properties',
 };

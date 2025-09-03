@@ -25,4 +25,8 @@ export class CreatePostDto {
   @IsArray()
   @IsMongoId({ each: true })
   schedules?: string[];
+
+  @IsNotEmpty()
+  @IsString()
+  propertyId: string;
 }

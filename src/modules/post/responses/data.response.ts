@@ -1,4 +1,16 @@
+import { Types } from 'mongoose';
 import { Status } from 'src/entities/system-log.entity';
+
+export interface PublishResultResponse {
+  platform: string; // platformId
+  status: PublishStatus;
+  publishedAt?: Date;
+  platformPostId?: string;
+  errorMessage?: string;
+  errorCode?: string;
+  retryCount: number;
+  lastRetryAt?: Date;
+}
 
 export interface PostResponse {
   id: string;
@@ -6,10 +18,41 @@ export interface PostResponse {
   media_urls: string[];
   status: Status;
   created_by: string;
-  platforms: string[];
-  schedules: string[];
-  attempts: number;
-  lastAttempt_at?: Date;
   created_at: Date;
   updated_at: Date;
+
+  // Thay cho platforms[]
+  publishResults: PublishResultResponse[];
+
+  // Thêm mấy cái virtual count cho tiện admin
+  successCount: number;
+  failedCount: number;
+  pendingCount: number;
+  countAll: number;
+}
+
+export interface PublishResult {
+  platform: Types.ObjectId;
+  status: PublishStatus;
+  publishedAt?: Date;
+  platformPostId?: string; // ID của post trên platform (để có thể edit/delete sau)
+  errorMessage?: string;
+  errorCode?: string;
+  retryCount?: number;
+  lastRetryAt?: Date;
+}
+
+export enum PostStatus {
+  DRAFT = 'draft',
+  SCHEDULED = 'scheduled',
+  PUBLISHING = 'publishing',
+  PUBLISHED = 'published',
+  FAILED = 'failed',
+  PARTIAL = 'partial', // Một số platform thành công, một số thất bại
+}
+export enum PublishStatus {
+  PENDING = 'pending',
+  SUCCESS = 'success',
+  FAILED = 'failed',
+  RETRYING = 'retrying',
 }

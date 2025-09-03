@@ -12,11 +12,12 @@ import { buildCacheKey } from 'src/utils/cache-key.util';
 import { Pagination } from '../paginate/pagination';
 import { PaginationOptionsInterface } from '../paginate/pagination.options.interface';
 import { PlatformService } from '../platform/platform.service';
+import { PropertyService } from '../property/property.service';
 import { UserLiteData } from '../user/responeses/user.response';
 import { CreatePostDto } from './dtos/create.dto';
 import { POST_CACHE_TTL } from './post.constant';
 import { CreatePostResponse } from './responses/create.response';
-import { PostResponse } from './responses/data.response';
+import { PostResponse, PublishStatus } from './responses/data.response';
 
 @Injectable()
 export class PostService {
@@ -26,6 +27,7 @@ export class PostService {
     @InjectModel(PostEntity.name)
     private readonly postModel: Model<PostDocument>,
     private readonly redisCacheService: RedisCacheService,
+    private readonly propertyService: PropertyService,
 
     private readonly platformService: PlatformService,
   ) {}
@@ -34,17 +36,19 @@ export class PostService {
     createPostDto: CreatePostDto,
     user: UserLiteData,
   ): Promise<CreatePostResponse> {
-    const { text, media_urls, platforms, schedules } = createPostDto;
+    const { text, media_urls, platforms, schedules, propertyId } =
+      createPostDto;
 
-    if (!platforms)
+    if (!platforms || platforms.length === 0) {
       throw new BadRequestException({
-        message: 'Error 3',
+        message: 'At least one platform is required',
         code: StatusCode.BadRequest,
       });
+    }
 
+    // Validate platforms có tồn tại
     const isValidPlatform =
       await this.platformService.validateFlatform(platforms);
-
     if (!isValidPlatform) {
       throw new BadRequestException({
         message: 'One or more platforms do not exist',
@@ -52,13 +56,20 @@ export class PostService {
       });
     }
 
-    // Tạo post mới
+    // Init publishResults cho từng platform
+    const publishResults = platforms.map((platformId) => ({
+      platform: platformId,
+      status: PublishStatus.PENDING,
+      retryCount: 0,
+    }));
+
     const newPost = new this.postModel({
       text,
       media_urls: media_urls ?? [],
-      platforms: platforms ?? [],
       schedules: schedules ?? [],
       created_by: user.id,
+      publishResults,
+      propertyId,
     });
 
     try {
@@ -128,6 +139,87 @@ export class PostService {
     );
     return result;
   }
+
+  async findByProperty(propertyId: string): Promise<PostResponse[]> {
+    const cacheKey = `property_posts_${propertyId}`;
+    const cached = await this.redisCacheService.get<PostResponse[]>(cacheKey);
+
+    if (cached) {
+      this.logger.log(`Cache HIT: ${cacheKey}`);
+      return cached;
+    }
+
+    const property = await this.propertyService.validateProperty(propertyId);
+    if (!property) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'Not Found or Not Allowed',
+        error: 'Not Found',
+      });
+    }
+
+    const posts = await this.postModel.find({ propertyId });
+    // .populate({ path: 'schedules', select: '_id scheduled_at' });
+
+    const result = posts.map(toPostResponse);
+
+    await this.redisCacheService
+      .set(cacheKey, result, 3600)
+      .catch((err) => this.logger.error(`Failed to cache ${cacheKey}`, err));
+
+    return result;
+  }
+
+  async validatePost(postId: string): Promise<boolean> {
+    try {
+      const service = await this.postModel.findById(postId).exec();
+      return !!service; // Returns true if service exists, false otherwise
+    } catch (error) {
+      this.logger.error(`Error validating post: ${error.message}`);
+      return false;
+    }
+  }
+
+  // async findByProperty(id: string, propertyId: string): Promise<PostResponse> {
+  //   const cacheKey = `property_${id}_${propertyId}`;
+  //   const cached = await this.redisCacheService.get<PostResponse>(cacheKey);
+
+  //   if (cached) {
+  //     this.logger.log(`Cache HIT: ${cacheKey}`);
+  //     return cached;
+  //   }
+
+  //   const propoerty = await this.propertyService.validateProperty(propertyId);
+  //   if (!propoerty) {
+  //     throw new BadRequestException({
+  //       statusCode: StatusCode.BadRequest,
+  //       message: 'Not Found or Not Allowed',
+  //       error: 'Not Found',
+  //     });
+  //   }
+
+  //   const post = await this.postModel
+  //     .findOne({ _id: id, propertyId })
+  //     .populate({
+  //       path: 'schedules',
+  //       select: '_id scheduled_at',
+  //     });
+
+  //   if (!post)
+  //     throw new BadRequestException({
+  //       statusCode: StatusCode.BadRequest,
+  //       message: 'Not Found or Not Allowed',
+  //       error: 'Not Found',
+  //     });
+
+  //   const result = toPostResponse(post);
+
+  //   await this.redisCacheService
+  //     .set(cacheKey, result, 3600)
+  //     .catch((err) => this.logger.error(`Failed to cache ${cacheKey}`, err));
+
+  //   return result;
+  // }
 
   //   async update(
   //     _id: string,

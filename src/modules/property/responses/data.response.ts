@@ -1,5 +1,4 @@
-import { PropertyStatus, PropertyType, UserRole } from 'src/common';
-import { UserLiteData } from 'src/mappers/user.mapper';
+import { PropertyStatus, PropertyType } from 'src/common';
 import { PlatformLimitResponse } from 'src/modules/platform/responses/data.response';
 
 export interface PropertyResponse {
@@ -8,13 +7,6 @@ export interface PropertyResponse {
   slug: string;
   description?: string;
   platforms?: PlatformLimitResponse[];
-  posts: string[];
-  schedules: string[];
   property_status: PropertyStatus;
   property_type: PropertyType;
-  members: {
-    user: UserLiteData;
-    role: UserRole;
-  }[];
-  owner: UserLiteData;
 }

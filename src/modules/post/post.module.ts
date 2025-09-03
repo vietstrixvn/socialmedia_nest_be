@@ -7,6 +7,7 @@ import { PostEntity, PostSchema } from 'src/entities/post.entity';
 import { AuthModule } from '../auth/auth.module';
 import { RedisCacheModule } from '../cache/redis-cache.module';
 import { PlatformModule } from '../platform/platform.module';
+import { PropertyModule } from '../property/property.module';
 import { PostController } from './post.contronller';
 import { PostService } from './post.service';
 
@@ -18,6 +19,7 @@ import { PostService } from './post.service';
     AuthModule,
     RedisCacheModule,
     PlatformModule,
+    PropertyModule,
   ],
   controllers: [PostController],
   providers: [PostService],

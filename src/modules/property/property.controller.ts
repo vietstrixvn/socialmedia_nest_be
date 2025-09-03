@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Logger,
+  Param,
   Post,
   Query,
   Req,
@@ -11,7 +13,7 @@ import {
 } from '@nestjs/common';
 
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard, RolesGuard } from 'src/common';
+import { JwtAuthGuard, RolesGuard, StatusCode } from 'src/common';
 import { AdminJwtAuthGuard } from 'src/common/guard/jwt-admin.guard';
 import { CreatePropertyDto } from './dtos/craete.dto';
 import { PropertyService } from './property.service';
@@ -25,33 +27,39 @@ export class PropertyController {
     // private readonly systemLogService: SystemLogService,
   ) {}
 
-  @Get()
-  @UseGuards(JwtAuthGuard)
-  async getUserProperties(
-    @Req() req,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('page') page: number = 1,
-    @Query('page_size') page_size: number = 10,
-  ): Promise<any> {
-    const options = { page, page_size };
-    const ownerId = req.user.id;
-
-    return this.propertyService.findAll(options, ownerId, startDate, endDate);
-  }
-
   @Get('/admin')
   @UseGuards(AdminJwtAuthGuard, RolesGuard)
   async getAdminProperties(
     @Req() req,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('ownerId') ownerId?: string, // ✨ NEW: Optional owner filter
     @Query('page') page: number = 1,
     @Query('page_size') page_size: number = 10,
   ): Promise<any> {
     const options = { page, page_size };
 
-    return this.propertyService.adminFindAll(options, startDate, endDate);
+    return this.propertyService.adminFindAll(
+      options,
+      startDate,
+      ownerId,
+      endDate,
+    );
+  }
+
+  @Get('/:id')
+  @UseGuards(JwtAuthGuard)
+  async findBySlug(@Req() req, @Param('id') id: string) {
+    const userId = req.user.id;
+    const property = await this.propertyService.findById(id, userId);
+    if (!property) {
+      throw new BadRequestException({
+        statusCode: StatusCode.NotFound,
+        message: 'Not Found',
+        error: 'Not Found',
+      });
+    }
+    return property;
   }
 
   @Post()
@@ -59,17 +67,6 @@ export class PropertyController {
   @UseInterceptors(FileInterceptor(''))
   async create(@Body() createFaqDto: CreatePropertyDto, @Req() req) {
     const category = await this.propertyService.create(createFaqDto, req.user);
-
-    // await this.systemLogService.log({
-    //   type: SystemLogType.CategoryCreated,
-    //   note: `User ${req.user.email} created a new CATEGORY.`,
-    //   status: Status.Success,
-    //   data: {
-    //     user: req.user,
-    //     id: category.result._id,
-    //     title: category.result.name,
-    //   },
-    // });
 
     return category;
   }

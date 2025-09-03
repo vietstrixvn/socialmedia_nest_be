@@ -13,9 +13,11 @@ import { CredentialModule } from 'src/modules/credential/credential.module';
 import { PlatformModule } from 'src/modules/platform/platform.module';
 import { PostModule } from 'src/modules/post/post.module';
 import { PropertyModule } from 'src/modules/property/property.module';
+import { SchedulePostModule } from 'src/modules/schedule/schedule.module';
 import { SuperUserModule } from 'src/modules/super_user/superuser.module';
 import { SystemLogModule } from 'src/modules/system-log/system-log.module';
 import { UserModule } from 'src/modules/user/user.module';
+import { UserPropertyModule } from 'src/modules/user_property/user_property.module';
 import { AppBaseController } from './app.base.controller';
 import { AppService } from './app.service';
 
@@ -53,10 +55,12 @@ import { AppService } from './app.service';
     AuthModule,
     UserModule,
 
+    UserPropertyModule,
     PropertyModule,
     PlatformModule,
     CredentialModule,
     PostModule,
+    SchedulePostModule,
   ],
   controllers: [AppBaseController],
   providers: [

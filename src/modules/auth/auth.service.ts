@@ -182,7 +182,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found!');
     const currentUser: CurrentUser = {
       id: user.id,
-      username: user.username,
+      username: user.username ?? user.email,
       email: user.email,
       isActive: user.isActive,
       isBlocked: user.isBlocked,

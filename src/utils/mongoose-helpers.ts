@@ -10,7 +10,7 @@ export function addConditionalSelectHook(
   schema: Schema,
   sensitiveFields: string[],
 ) {
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isDevelopment = process.env.NODE_ENV === 'local';
 
   // Pre-hook cho find operations
   schema.pre(['find', 'findOne', 'findOneAndUpdate'], function () {

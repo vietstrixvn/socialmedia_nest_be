@@ -1,15 +1,18 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Get,
   Logger,
   Post,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-import { JwtAuthGuard } from 'src/common';
+import { JwtAuthGuard, StatusCode } from 'src/common';
 import { CreatePostDto } from './dtos/create.dto';
 import { PostService } from './post.service';
 
@@ -61,6 +64,21 @@ export class PostController {
     // });
 
     return category;
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async findBySlug(@Query('propertyId') propertyId: string) {
+    if (!propertyId) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'propertyId is required',
+        error: 'Bad Request',
+      });
+    }
+
+    const posts = await this.postService.findByProperty(propertyId);
+    return posts;
   }
 
   //   @Patch(':id')

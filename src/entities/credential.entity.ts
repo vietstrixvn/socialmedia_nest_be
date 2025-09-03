@@ -21,7 +21,7 @@ export class CredentialEntity extends Base {
   @Prop({ required: true })
   apiKey: string;
 
-  @Prop({ type: Object, required: true })
+  @Prop({ type: Object, ref: 'UserEntity', required: true })
   owner: any;
 
   @Prop({ required: false })

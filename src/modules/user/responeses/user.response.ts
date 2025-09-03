@@ -1,8 +1,8 @@
 export interface UserData {
   id: string;
-  username: string;
-  firstName: string;
+  username?: string;
   lastName: string;
+  email?: string;
 }
 
 export interface UserLiteData {

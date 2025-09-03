@@ -8,13 +8,13 @@ import { StatusCode, StatusType } from 'src/common';
 import { PropertyDocument, PropertyEntity } from 'src/entities/property.entity';
 import { buildPropertyFilter } from 'src/helpers/property.helper';
 import { toPropertyDataResponse } from 'src/mappers/property.mapper';
-import { UserLiteData } from 'src/mappers/user.mapper';
 import { buildCacheKey } from 'src/utils/cache-key.util';
 import { Pagination } from '../paginate/pagination';
 import { PaginationOptionsInterface } from '../paginate/pagination.options.interface';
 import { PlatformService } from '../platform/platform.service';
 import { SlugProvider } from '../slug/slug.provider';
-import { UserService } from '../user/user.service';
+import { UserLiteData } from '../user/responeses/user.response';
+import { UserPropertyService } from '../user_property/user_property.service';
 import { CreatePropertyDto } from './dtos/craete.dto';
 import { PROPERTY_CACHE_TTL } from './property.constant';
 import { CreatePropertyResponse } from './responses/create.response';
@@ -29,8 +29,8 @@ export class PropertyService {
     private readonly propertyModel: Model<PropertyDocument>,
     private readonly slugProvider: SlugProvider,
     private readonly platformService: PlatformService,
+    private readonly userPropertyService: UserPropertyService,
 
-    private readonly userService: UserService,
     private readonly redisCacheService: RedisCacheService,
   ) {}
 
@@ -68,6 +68,9 @@ export class PropertyService {
         path: 'platforms',
         select: '_id name',
       })
+
+      .populate('owner')
+
       .limit(options.page_size)
       .sort({ createdAt: -1 })
       .exec();
@@ -95,6 +98,7 @@ export class PropertyService {
   async adminFindAll(
     options: PaginationOptionsInterface,
     startDate?: string,
+    ownerId?: string,
     endDate?: string,
   ): Promise<Pagination<PropertyResponse>> {
     const cacheKey = buildCacheKey('admin_properties', {
@@ -102,6 +106,7 @@ export class PropertyService {
       page_size: options.page_size,
       start: startDate,
       end: endDate,
+      owner: ownerId,
     });
 
     const cached =
@@ -112,8 +117,17 @@ export class PropertyService {
       return cached;
     }
 
+    // ✨ Build filter with optional ownerId
     const filter = {
       ...buildPropertyFilter({ startDate, endDate }),
+      // Add owner filter only if ownerId is provided
+      ...(ownerId && {
+        $or: [
+          { 'owner.id': ownerId },
+          { 'owner._id': ownerId },
+          { owner: ownerId },
+        ],
+      }),
     };
 
     const properties = await this.propertyModel
@@ -144,6 +158,49 @@ export class PropertyService {
       result,
       PROPERTY_CACHE_TTL.PROPERTY_LIST,
     );
+    return result;
+  }
+
+  async findById(id: string, userId: string): Promise<PropertyResponse> {
+    const cacheKey = `property_${id}_${userId}`;
+    const cached = await this.redisCacheService.get<PropertyResponse>(cacheKey);
+
+    if (cached) {
+      this.logger.log(`Cache HIT: ${cacheKey}`);
+      return cached;
+    }
+
+    const userProperty = await this.userPropertyService.getUserProperty(
+      userId,
+      id,
+    );
+    if (!userProperty) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'Not Found or Not Allowed',
+        error: 'Not Found',
+      });
+    }
+
+    const property = await this.propertyModel.findById(id).populate({
+      path: 'platforms',
+      select: '_id name',
+    });
+
+    if (!property) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'Not Found or Not Allowed',
+        error: 'Not Found',
+      });
+    }
+
+    const result = toPropertyDataResponse(property);
+
+    await this.redisCacheService
+      .set(cacheKey, result, 3600)
+      .catch((err) => this.logger.error(`Failed to cache ${cacheKey}`, err));
+
     return result;
   }
 
@@ -179,7 +236,7 @@ export class PropertyService {
 
     if (exists)
       throw new BadRequestException({
-        message: 'Error 2',
+        message: 'Property with this name already exists for this user',
         error: 'Error',
       });
 
@@ -215,8 +272,7 @@ export class PropertyService {
       await this.redisCacheService.delByPattern('properties*');
       const saved = await newProperty.save();
 
-      await this.userService.addOwnedProperty(user.id, saved._id);
-
+      await this.userPropertyService.assignOwner(user.id, saved._id);
       return {
         status: StatusType.Success,
         result: saved,
