@@ -26,7 +26,7 @@ export class PostEntity extends Base {
   @Prop({
     type: [
       {
-        platform: { type: String, ref: COLLECTION_KEYS.PLATFORM },
+        platform: { type: String, ref: 'PlatformEntity' },
         status: { type: String, enum: Object.values(PublishStatus) },
         publishedAt: { type: Date },
         platformPostId: { type: String },

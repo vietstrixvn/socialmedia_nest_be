@@ -9,8 +9,8 @@ export class ScheduleEntity extends Base {
   @Prop({ type: String, ref: COLLECTION_KEYS.POST, required: true })
   post_id: Types.ObjectId;
 
-  @Prop({ type: String, ref: COLLECTION_KEYS.PLATFORM, required: true })
-  platform_id: Types.ObjectId;
+  @Prop({ type: String, ref: 'PlatformEntity', required: true })
+  platform_id: string;
 
   @Prop({
     type: String,
@@ -33,6 +33,9 @@ export class ScheduleEntity extends Base {
 
   @Prop({ required: false })
   lastAttempt_at?: Date;
+
+  @Prop({ type: String, ref: COLLECTION_KEYS.PROPERTY, required: true })
+  propertyId: Types.ObjectId;
 }
 
 export type ScheduleDocument = ScheduleEntity & Document;

@@ -16,6 +16,10 @@ export function toFlatFormDataResponse(
     maxTextLength: platform.maxTextLength ?? 0,
     maxFileSize: platform.maxFileSize ?? 0,
     supportedFormats: platform.supportedFormats ?? [],
+
+    baseUrl: platform.baseUrl ?? '',
+    authUrl: platform.authUrl ?? '',
+    apiVersion: platform.apiVersion ?? '',
   };
 }
 

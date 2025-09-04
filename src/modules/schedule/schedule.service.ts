@@ -4,13 +4,21 @@ import { Model } from 'mongoose';
 
 import { RedisCacheService } from '../cache/redis-cache.service';
 
-import { StatusType } from 'src/common';
+import { StatusCode, StatusType } from 'src/common';
 import { ScheduleDocument, ScheduleEntity } from 'src/entities/schedule.entity';
+import { buildScheduleFilter } from 'src/helpers/schedule.helper';
+import { toScheduleDataResponse } from 'src/mappers/schedule.mapper';
+import { buildCacheKey } from 'src/utils/cache-key.util';
+import { Pagination } from '../paginate/pagination';
+import { PaginationOptionsInterface } from '../paginate/pagination.options.interface';
 import { PostService } from '../post/post.service';
 import { PublishStatus } from '../post/responses/data.response';
+import { PropertyService } from '../property/property.service';
 import { UserLiteData } from '../user/responeses/user.response';
 import { CreateScheduleDto } from './dtos/create.dto';
 import { CreateScheduleResponse } from './responses/create.response';
+import { ScheduleResponse } from './responses/data.response';
+import { SCHEDULE_CACHE_TTL } from './schedule.constant';
 
 @Injectable()
 export class ScheduleService {
@@ -20,129 +28,132 @@ export class ScheduleService {
     @InjectModel(ScheduleEntity.name)
     private readonly scheduleModel: Model<ScheduleDocument>,
     private readonly postService: PostService,
+    private readonly propertyService: PropertyService,
 
     private readonly redisCacheService: RedisCacheService,
   ) {}
 
-  //   async findAll(
-  //     options: PaginationOptionsInterface,
-  //     ownerId: string,
-  //     startDate?: string,
-  //     endDate?: string,
-  //   ): Promise<Pagination<SchduleResponse>> {
-  //     const cacheKey = buildCacheKey('properties', {
-  //       page: options.page,
-  //       page_size: options.page_size,
-  //       start: startDate,
-  //       end: endDate,
-  //       owner: ownerId,
-  //     });
+  async findByPost(
+    options: PaginationOptionsInterface,
+    postId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Pagination<ScheduleResponse>> {
+    const cacheKey = buildCacheKey('schedules_by_post', {
+      page: options.page,
+      page_size: options.page_size,
+      start: startDate,
+      end: endDate,
+      postID: postId,
+    });
 
-  //     const cached =
-  //       await this.redisCacheService.get<Pagination<PropertyResponse>>(cacheKey);
+    const cached =
+      await this.redisCacheService.get<Pagination<ScheduleResponse>>(cacheKey);
 
-  //     if (cached) {
-  //       this.logger.log(`Cache HIT: ${cacheKey}`);
-  //       return cached;
-  //     }
+    if (cached) {
+      this.logger.log(`Cache HIT: ${cacheKey}`);
+      return cached;
+    }
 
-  //     const filter = {
-  //       ...buildPropertyFilter({ startDate, endDate }),
-  //       owner: ownerId,
-  //     };
-  // async findAll(
-  //     options: PaginationOptionsInterface,
-  //     ownerId: string,
-  //     startDate?: string,
-  //     endDate?: string,
-  //   ): Promise<Pagination<SchduleResponse>> {
-  //     const cacheKey = buildCacheKey('properties', {
-  //       page: options.page,
-  //       page_size: options.page_size,
-  //       start: startDate,
-  //       end: endDate,
-  //       owner: ownerId,
-  //     });
+    const filter = {
+      ...buildScheduleFilter({ startDate, endDate }),
+      post_id: postId,
+    };
 
-  //     const cached =
-  //       await this.redisCacheService.get<Pagination<PropertyResponse>>(cacheKey);
+    const properties = await this.scheduleModel
+      .find(filter)
+      .skip((options.page - 1) * options.page_size)
+      .limit(options.page_size)
+      .sort({ createdAt: -1 })
+      .exec();
 
-  //     if (cached) {
-  //       this.logger.log(`Cache HIT: ${cacheKey}`);
-  //       return cached;
-  //     }
+    const total = await this.scheduleModel.countDocuments(filter);
 
-  //     const filter = {
-  //       ...buildPropertyFilter({ startDate, endDate }),
-  //       owner: ownerId,
-  //     };
+    const mappedProperties = properties.map(toScheduleDataResponse);
 
-  //     const properties = await this.propertyModel
-  //       .find(filter)
-  //       .skip((options.page - 1) * options.page_size)
-  //       .populate({
-  //         path: 'platforms',
-  //         select: '_id name',
-  //       })
+    const result = new Pagination<ScheduleResponse>({
+      results: mappedProperties,
+      total,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: options.page_size,
+      current_page: options.page,
+    });
 
-  //       .populate('owner')
+    await this.redisCacheService.set(
+      cacheKey,
+      result,
+      SCHEDULE_CACHE_TTL.SCHEDULE_LIST,
+    );
+    return result;
+  }
 
-  //       .limit(options.page_size)
-  //       .sort({ createdAt: -1 })
-  //       .exec();
+  // UPDATE
+  async findByProperty(
+    options: PaginationOptionsInterface,
+    propertyId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<Pagination<ScheduleResponse>> {
+    const cacheKey = buildCacheKey('schedules_by_property', {
+      page: options.page,
+      page_size: options.page_size,
+      start: startDate,
+      end: endDate,
+      propertyID: propertyId,
+    });
 
-  //     const total = await this.propertyModel.countDocuments(filter);
+    const cached =
+      await this.redisCacheService.get<Pagination<ScheduleResponse>>(cacheKey);
 
-  //     const mappedProperties = properties.map(toPropertyDataResponse);
+    if (cached) {
+      this.logger.log(`Cache HIT: ${cacheKey}`);
+      return cached;
+    }
 
-  //     const result = new Pagination<PropertyResponse>({
-  //       results: mappedProperties,
-  //       total,
-  //       total_page: Math.ceil(total / options.page_size),
-  //       page_size: options.page_size,
-  //       current_page: options.page,
-  //     });
+    const property = await this.propertyService.validateProperty(propertyId);
+    if (!property) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'Not Found or Not Allowed',
+        error: 'Not Found',
+      });
+    }
 
-  //     await this.redisCacheService.set(
-  //       cacheKey,
-  //       result,
-  //       PROPERTY_CACHE_TTL.PROPERTY_LIST,
-  //     );
-  //     return result;
-  //   }
-  //     const properties = await this.propertyModel
-  //       .find(filter)
-  //       .skip((options.page - 1) * options.page_size)
-  //       .populate({
-  //         path: 'platforms',
-  //         select: '_id name',
-  //       })
+    // 1. Build filter trực tiếp trên Schedule
+    const filter: any = {
+      ...buildScheduleFilter({ startDate, endDate }),
+      propertyId, // vì giờ schedule đã có propertyId
+    };
 
-  //       .populate('owner')
+    // 2. Query schedules
+    const schedules = await this.scheduleModel
+      .find(filter)
+      .skip((options.page - 1) * options.page_size)
+      .limit(options.page_size)
+      .sort({ createdAt: -1 })
+      .exec();
 
-  //       .limit(options.page_size)
-  //       .sort({ createdAt: -1 })
-  //       .exec();
+    const total = await this.scheduleModel.countDocuments(filter);
 
-  //     const total = await this.propertyModel.countDocuments(filter);
+    const mappedSchedules = schedules.map(toScheduleDataResponse);
 
-  //     const mappedProperties = properties.map(toPropertyDataResponse);
+    const result = new Pagination<ScheduleResponse>({
+      results: mappedSchedules,
+      total,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: options.page_size,
+      current_page: options.page,
+    });
 
-  //     const result = new Pagination<PropertyResponse>({
-  //       results: mappedProperties,
-  //       total,
-  //       total_page: Math.ceil(total / options.page_size),
-  //       page_size: options.page_size,
-  //       current_page: options.page,
-  //     });
+    // 3. Cache lại
+    await this.redisCacheService.set(
+      cacheKey,
+      result,
+      SCHEDULE_CACHE_TTL.SCHEDULE_LIST,
+    );
 
-  //     await this.redisCacheService.set(
-  //       cacheKey,
-  //       result,
-  //       PROPERTY_CACHE_TTL.PROPERTY_LIST,
-  //     );
-  //     return result;
-  //   }
+    return result;
+  }
 
   //   async adminFindAll(
   //     options: PaginationOptionsInterface,
@@ -237,6 +248,12 @@ export class ScheduleService {
     //     throw new BadRequestException({ message: 'Credential not found' });
     // }
 
+    // Check if post exists & lấy propertyId
+    const postDoc = await this.postService.findById(post_id);
+    if (!postDoc) {
+      throw new BadRequestException({ message: 'Post not found or invalid' });
+    }
+
     // Check if a schedule for this post + platform already exists
     const existingSchedule = await this.scheduleModel.findOne({
       post_id,
@@ -256,11 +273,14 @@ export class ScheduleService {
       credential_id: credential_id || null,
       scheduled_at,
       created_by: user.id,
+      propertyId: postDoc.propertyId,
       status: PublishStatus.PENDING, // default
     });
 
     try {
       const saved = await newSchedule.save();
+      await this.redisCacheService.delByPattern('schedules_by_property*');
+
       return {
         status: StatusType.Success,
         result: saved,

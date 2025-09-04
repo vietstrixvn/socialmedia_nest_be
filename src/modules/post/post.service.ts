@@ -74,6 +74,9 @@ export class PostService {
 
     try {
       const saved = await newPost.save();
+
+      await this.redisCacheService.delByPattern('posts*');
+
       return {
         status: StatusType.Success,
         result: saved,
@@ -140,9 +143,13 @@ export class PostService {
     return result;
   }
 
-  async findByProperty(propertyId: string): Promise<PostResponse[]> {
-    const cacheKey = `property_posts_${propertyId}`;
-    const cached = await this.redisCacheService.get<PostResponse[]>(cacheKey);
+  async findByProperty(
+    options: PaginationOptionsInterface,
+    propertyId: string,
+  ): Promise<Pagination<PostResponse>> {
+    const cacheKey = `posts_property${propertyId}`;
+    const cached =
+      await this.redisCacheService.get<Pagination<PostResponse>>(cacheKey);
 
     if (cached) {
       this.logger.log(`Cache HIT: ${cacheKey}`);
@@ -159,9 +166,23 @@ export class PostService {
     }
 
     const posts = await this.postModel.find({ propertyId });
-    // .populate({ path: 'schedules', select: '_id scheduled_at' });
 
-    const result = posts.map(toPostResponse);
+    const filter: any = {
+      propertyId, // vì giờ schedule đã có propertyId
+    };
+
+    // .populate({ path: 'schedules', select: '_id scheduled_at' })
+    //
+    const total = await this.postModel.countDocuments(filter);
+    const mappedPosts = posts.map(toPostResponse);
+
+    const result = new Pagination<PostResponse>({
+      results: mappedPosts,
+      total,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: options.page_size,
+      current_page: options.page,
+    });
 
     await this.redisCacheService
       .set(cacheKey, result, 3600)
@@ -177,6 +198,25 @@ export class PostService {
     } catch (error) {
       this.logger.error(`Error validating post: ${error.message}`);
       return false;
+    }
+  }
+
+  async findPostIdsByProperty(propertyId: string): Promise<string[]> {
+    const posts = await this.postModel
+      .find({ propertyId })
+      .select('_id')
+      .lean()
+      .exec();
+
+    return posts.map((p) => p._id.toString());
+  }
+
+  async findById(postId: string): Promise<PostDocument | null> {
+    try {
+      return await this.postModel.findById(postId).exec();
+    } catch (error) {
+      this.logger.error(`Error finding post: ${error.message}`);
+      return null;
     }
   }
 

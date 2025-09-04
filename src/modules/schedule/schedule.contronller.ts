@@ -1,14 +1,17 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Get,
   Logger,
   Post,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from 'src/common';
+import { JwtAuthGuard, StatusCode } from 'src/common';
 import { CreateScheduleDto } from './dtos/create.dto';
 import { ScheduleService } from './schedule.service';
 
@@ -36,6 +39,62 @@ export class ScheduleController {
     // });
 
     return schedule;
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async findByPost(
+    @Query('postId') postId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page: number = 1,
+    @Query('page_size') page_size: number = 10,
+  ) {
+    const options = { page, page_size };
+
+    if (!postId) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'postId is required',
+        error: 'Bad Request',
+      });
+    }
+
+    const posts = await this.scheduleService.findByPost(
+      options,
+      postId,
+      startDate,
+      endDate,
+    );
+    return posts;
+  }
+
+  @Get('/property')
+  @UseGuards(JwtAuthGuard)
+  async findBySlug(
+    @Query('propertyId') propertyId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page: number = 1,
+    @Query('page_size') page_size: number = 10,
+  ) {
+    const options = { page, page_size };
+
+    if (!propertyId) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'propertyId is required',
+        error: 'Bad Request',
+      });
+    }
+
+    const posts = await this.scheduleService.findByProperty(
+      options,
+      propertyId,
+      startDate,
+      endDate,
+    );
+    return posts;
   }
 
   //   @Get()

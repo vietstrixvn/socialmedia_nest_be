@@ -68,7 +68,11 @@ export class PostController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findBySlug(@Query('propertyId') propertyId: string) {
+  async findBySlug(
+    @Query('propertyId') propertyId: string,
+    @Query('page') page: number = 1,
+    @Query('page_size') page_size: number = 10,
+  ) {
     if (!propertyId) {
       throw new BadRequestException({
         statusCode: StatusCode.BadRequest,
@@ -76,8 +80,9 @@ export class PostController {
         error: 'Bad Request',
       });
     }
+    const options = { page, page_size };
 
-    const posts = await this.postService.findByProperty(propertyId);
+    const posts = await this.postService.findByProperty(options, propertyId);
     return posts;
   }
 

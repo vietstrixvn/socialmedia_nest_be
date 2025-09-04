@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
 } from 'class-validator';
 
 export class CreatePlatformDto {
@@ -36,4 +37,16 @@ export class CreatePlatformDto {
   @IsArray()
   @IsString({ each: true })
   supportedFormats?: string[];
+
+  @IsOptional()
+  @IsUrl()
+  baseUrl?: string;
+
+  @IsOptional()
+  @IsUrl()
+  authUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  apiVersion?: string;
 }

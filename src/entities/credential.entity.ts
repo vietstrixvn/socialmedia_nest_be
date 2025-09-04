@@ -13,10 +13,10 @@ export class CredentialEntity extends Base {
     ref: PlatformEntity.name,
     required: true,
   })
-  platform: Types.ObjectId;
+  platform_id: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: PropertyEntity.name, required: true })
-  property: Types.ObjectId;
+  property_id: Types.ObjectId;
 
   @Prop({ required: true })
   apiKey: string;

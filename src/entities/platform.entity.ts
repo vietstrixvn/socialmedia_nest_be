@@ -25,6 +25,15 @@ export class PlatformEntity extends Base {
 
   @Prop({ type: [String], required: false })
   supportedFormats?: string[];
+
+  @Prop({ required: false })
+  baseUrl?: string; // Ví dụ https://graph.facebook.com
+
+  @Prop({ required: false })
+  authUrl?: string; // URL dùng để OAuth (nếu có)
+
+  @Prop({ required: false })
+  apiVersion?: string; // Ví dụ v17.0 cho Facebook API
 }
 
 export type PlatformDocument = PlatformEntity & Document;
