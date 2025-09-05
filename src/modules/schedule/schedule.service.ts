@@ -10,7 +10,11 @@ import { buildScheduleFilter } from 'src/helpers/schedule.helper';
 import { toScheduleDataResponse } from 'src/mappers/schedule.mapper';
 import { buildCacheKey } from 'src/utils/cache-key.util';
 import { Pagination } from '../paginate/pagination';
-import { PaginationOptionsInterface } from '../paginate/pagination.options.interface';
+import {
+  GraphPagination,
+  PaginationOptionsInterface,
+} from '../paginate/pagination.options.interface';
+import { PlatformService } from '../platform/platform.service';
 import { PostService } from '../post/post.service';
 import { PublishStatus } from '../post/responses/data.response';
 import { PropertyService } from '../property/property.service';
@@ -29,9 +33,135 @@ export class ScheduleService {
     private readonly scheduleModel: Model<ScheduleDocument>,
     private readonly postService: PostService,
     private readonly propertyService: PropertyService,
+    private readonly platformService: PlatformService,
 
     private readonly redisCacheService: RedisCacheService,
   ) {}
+
+  async graphFindByPost(
+    options: PaginationOptionsInterface,
+    postId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<GraphPagination<ScheduleResponse>> {
+    const cacheKey = buildCacheKey('schedules_by_post', {
+      page: options.page,
+      page_size: options.page_size,
+      start: startDate,
+      end: endDate,
+      postID: postId,
+    });
+
+    const cached =
+      await this.redisCacheService.get<GraphPagination<ScheduleResponse>>(
+        cacheKey,
+      );
+
+    if (cached) {
+      this.logger.log(`Cache HIT: ${cacheKey}`);
+      return cached;
+    }
+
+    const filter = {
+      ...buildScheduleFilter({ startDate, endDate }),
+      post_id: postId,
+    };
+
+    const properties = await this.scheduleModel
+      .find(filter)
+      .skip((options.page - 1) * options.page_size)
+      .limit(options.page_size)
+      .sort({ createdAt: -1 })
+      .exec();
+
+    const total = await this.scheduleModel.countDocuments(filter);
+
+    const mappedProperties = properties.map(toScheduleDataResponse);
+
+    const result = new GraphPagination<ScheduleResponse>({
+      items: mappedProperties,
+      total,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: options.page_size,
+      current_page: options.page,
+    });
+
+    await this.redisCacheService.set(
+      cacheKey,
+      result,
+      SCHEDULE_CACHE_TTL.SCHEDULE_LIST,
+    );
+    return result;
+  }
+
+  async graphFindByProperty(
+    options: PaginationOptionsInterface,
+    propertyId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<GraphPagination<ScheduleResponse>> {
+    const cacheKey = buildCacheKey('schedules_by_property', {
+      page: options.page,
+      page_size: options.page_size,
+      start: startDate,
+      end: endDate,
+      propertyID: propertyId,
+    });
+
+    const cached =
+      await this.redisCacheService.get<GraphPagination<ScheduleResponse>>(
+        cacheKey,
+      );
+
+    if (cached) {
+      this.logger.log(`Cache HIT: ${cacheKey}`);
+      return cached;
+    }
+
+    const property = await this.propertyService.validateProperty(propertyId);
+    if (!property) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'Not Found or Not Allowed',
+        error: 'Not Found',
+      });
+    }
+
+    // 1. Build filter trực tiếp trên Schedule
+    const filter: any = {
+      ...buildScheduleFilter({ startDate, endDate }),
+      propertyId, // vì giờ schedule đã có propertyId
+    };
+
+    // 2. Query schedules
+    const schedules = await this.scheduleModel
+      .find(filter)
+      .skip((options.page - 1) * options.page_size)
+      .limit(options.page_size)
+      .sort({ createdAt: -1 })
+      .exec();
+
+    const total = await this.scheduleModel.countDocuments(filter);
+
+    const mappedSchedules = schedules.map(toScheduleDataResponse);
+
+    const result = new GraphPagination<ScheduleResponse>({
+      items: mappedSchedules,
+      total,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: options.page_size,
+      current_page: options.page,
+    });
+
+    // 3. Cache lại
+    await this.redisCacheService.set(
+      cacheKey,
+      result,
+      SCHEDULE_CACHE_TTL.SCHEDULE_LIST,
+    );
+
+    return result;
+  }
 
   async findByPost(
     options: PaginationOptionsInterface,
@@ -87,7 +217,6 @@ export class ScheduleService {
     return result;
   }
 
-  // UPDATE
   async findByProperty(
     options: PaginationOptionsInterface,
     propertyId: string,
@@ -238,6 +367,15 @@ export class ScheduleService {
     const isValidPost = await this.postService.validatePost(post_id);
     if (!isValidPost) {
       throw new BadRequestException({ message: 'Post not found or invalid' });
+    }
+
+    const isValidPlatform =
+      await this.platformService.validateLimitPlarform(platform_id);
+    if (!isValidPlatform) {
+      throw new BadRequestException({
+        message: 'One or more platforms do not exist',
+        code: StatusCode.BadRequest,
+      });
     }
 
     // Optional: validate credential if provided

@@ -13,7 +13,7 @@ export class CreateScheduleDto {
 
   @IsNotEmpty()
   @IsString()
-  platform_id: Types.ObjectId | string;
+  platform_id: string;
 
   @IsOptional()
   @IsString()

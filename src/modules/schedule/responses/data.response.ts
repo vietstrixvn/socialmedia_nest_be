@@ -1,12 +1,7 @@
 export interface ScheduleResponse {
   id: string;
   post_id: string;
-  platform_id:
-    | {
-        id: string;
-        name: string;
-      }
-    | undefined;
+  platform_id: string;
   property_id?: string;
   credential_id?: string | null;
   scheduled_at: Date;

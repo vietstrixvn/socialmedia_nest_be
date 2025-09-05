@@ -4,19 +4,24 @@ import { ScheduleResponse } from 'src/modules/schedule/responses/data.response';
 export function toScheduleDataResponse(
   schedule: ScheduleDocument,
 ): ScheduleResponse {
+  let platformId: string;
+  if (!schedule.platform_id) {
+    throw new Error(`Schedule ${schedule._id} missing platform_id`);
+  } else if (typeof schedule.platform_id === 'string') {
+    platformId = schedule.platform_id;
+  } else if ((schedule.platform_id as any)?._id) {
+    platformId = (schedule.platform_id as any)._id.toString();
+  } else {
+    throw new Error(`Schedule ${schedule._id} has invalid platform_id`);
+  }
+
   return {
     id: schedule._id?.toString() ?? '',
     post_id: schedule.post_id?.toString() ?? '',
-    platform_id: (schedule.platform_id as any)?._id
-      ? {
-          id: (schedule.platform_id as any)._id.toString(),
-          name: (schedule.platform_id as any).name,
-        }
-      : undefined,
-
+    platform_id: platformId,
     credential_id: schedule.credential_id?.toString() ?? null,
     scheduled_at: schedule.scheduled_at,
-    status: schedule.status, // giữ string enum
+    status: schedule.status,
     owner: schedule.owner
       ? {
           id: (schedule.owner as any)._id?.toString() ?? '',

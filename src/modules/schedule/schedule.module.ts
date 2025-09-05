@@ -6,10 +6,12 @@ import { ScheduleEntity, ScheduleSchema } from 'src/entities/schedule.entity';
 import { AdminModule } from '../admin/admin.module';
 import { AuthModule } from '../auth/auth.module';
 import { RedisCacheModule } from '../cache/redis-cache.module';
+import { PlatformModule } from '../platform/platform.module';
 import { PostModule } from '../post/post.module';
 import { PropertyModule } from '../property/property.module';
 import { UserModule } from '../user/user.module';
 import { ScheduleController } from './schedule.contronller';
+import { ScheduleResolver } from './schedule.resolver';
 import { ScheduleService } from './schedule.service';
 
 @Module({
@@ -24,9 +26,10 @@ import { ScheduleService } from './schedule.service';
     RedisCacheModule,
     PostModule,
     PropertyModule,
+    PlatformModule,
   ],
   controllers: [ScheduleController],
-  providers: [ScheduleService],
+  providers: [ScheduleService, ScheduleResolver],
   exports: [ScheduleService],
 })
 export class SchedulePostModule {}

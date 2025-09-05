@@ -6,8 +6,8 @@ export function toCredentialDataResponse(
 ): CredentialResponse {
   return {
     id: credential._id?.toString() ?? '',
-    platform: credential.platform?.toString() ?? '',
-    property: credential.property?.toString() ?? '',
+    platform: credential.platform_id?.toString() ?? '',
+    property: credential.property_id?.toString() ?? '',
     owner: credential.owner?.toString() ?? '',
     apiKey: credential.apiKey ?? '',
     accessToken: credential.accessToken,

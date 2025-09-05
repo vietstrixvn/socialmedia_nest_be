@@ -1,7 +1,10 @@
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { GraphQLModule } from '@nestjs/graphql';
 import { ScheduleModule } from '@nestjs/schedule';
+import { join } from 'path';
 import { redisConfig, setupConfig } from 'src/configs/app';
 import { DatabaseModule } from 'src/database/database.module';
 import { ApiKeyMiddleware } from 'src/middlewares/api-key.middleware';
@@ -27,6 +30,15 @@ import { AppService } from './app.service';
       isGlobal: true,
       load: [setupConfig, redisConfig],
       envFilePath: [`env/.env.${process.env.NODE_ENV || 'local'}`],
+    }),
+    // GraphqlModule,
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
+      playground: true,
+      context: ({ req }) => ({ req }),
+      path: '/api/schedule',
     }),
     CacheModule.registerAsync({
       isGlobal: true,

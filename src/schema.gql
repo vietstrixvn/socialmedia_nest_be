@@ -1,0 +1,66 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateScheduleInput {
+  credential_id: String
+  platform_id: String
+  post_id: String!
+  scheduled_at: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Mutation {
+  createSchedule(input: CreateScheduleInput!): ScheduleGraph!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
+input PaginationOptionsInput {
+  page: Int! = 1
+  page_size: Int! = 10
+}
+
+type PaginationScheduleGraph {
+  edges: [ScheduleEdge!]!
+  pageInfo: PageInfo!
+}
+
+enum PublishStatus {
+  FAILED
+  PENDING
+  RETRYING
+  SUCCESS
+}
+
+type Query {
+  schedulesByPost(endDate: String, options: PaginationOptionsInput!, postId: String!, startDate: String): PaginationScheduleGraph!
+  schedulesByProperty(endDate: String, options: PaginationOptionsInput!, propertyId: String!, startDate: String): PaginationScheduleGraph!
+}
+
+type ScheduleEdge {
+  cursor: String!
+  node: ScheduleGraph!
+}
+
+type ScheduleGraph {
+  attempts: Float
+  credential_id: String
+  id: ID!
+  lastAttempt_at: DateTime
+  owner: String
+  platform_id: String!
+  post_id: String!
+  propertyId: String!
+  scheduled_at: String!
+  status: PublishStatus!
+}
