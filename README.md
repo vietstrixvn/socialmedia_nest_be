@@ -56,13 +56,13 @@ $ yarn start:prod
 
 ### REST
 
-![REST API Diagram](./docs/rest-placeholder.png)
+![REST API Diagram](./public/rest.png)
 
 <!-- Replace with your REST API diagram -->
 
 ### GraphQL
 
-![GraphQL API Diagram](./docs/graphql-placeholder.png)
+![GraphQL API Diagram](./public/graph.png)
 
 <!-- Replace with your GraphQL API diagram -->
 
