@@ -11,6 +11,7 @@ import { AuthService } from '../auth/auth.service';
 import { JwtStrategy } from '../auth/strategies/jwt.strategy';
 import { RedisCacheModule } from '../cache/redis-cache.module';
 import { UserController } from './user.controller';
+import { UserResolver } from './user.resolver';
 import { UserService } from './user.service';
 
 @Module({
@@ -24,7 +25,7 @@ import { UserService } from './user.service';
     RedisCacheModule,
   ],
   controllers: [UserController],
-  providers: [UserService, AuthService, JwtStrategy],
+  providers: [UserService, AuthService, JwtStrategy, UserResolver],
   exports: [UserService],
 })
 export class UserModule {}

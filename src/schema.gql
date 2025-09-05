@@ -71,6 +71,13 @@ type PostGraph {
   text: String!
 }
 
+"""Authentication providers"""
+enum Provider {
+  Github
+  Google
+  Local
+}
+
 type PublishResultGraph {
   errorCode: String
   errorMessage: String
@@ -93,6 +100,7 @@ type Query {
   postsByProperty(endDate: String, options: PaginationOptionsInput!, propertyId: String!, startDate: String): PaginationPostGraph!
   schedulesByPost(endDate: String, options: PaginationOptionsInput!, postId: String!, startDate: String): PaginationScheduleGraph!
   schedulesByProperty(endDate: String, options: PaginationOptionsInput!, propertyId: String!, startDate: String): PaginationScheduleGraph!
+  userProfile: UserGraph!
 }
 
 type ScheduleEdge {
@@ -117,4 +125,33 @@ enum Status {
   Approved
   Pending
   Rejected
+}
+
+type UserGraph {
+  _id: ID!
+  account_type: UserStatus!
+  avatar_url: String
+  createdAt: DateTime!
+  deletedAt: DateTime
+  email: String!
+  firstName: String!
+  fullName: String!
+  isActive: Boolean!
+  isBlocked: Boolean!
+  isDeleted: Boolean!
+  lastLogin: DateTime!
+  lastName: String!
+  phone_number: String
+  provider: Provider!
+  provider_id: String
+  timezone: String
+  updatedAt: DateTime!
+  username: String!
+  verified: Boolean!
+}
+
+"""User account types"""
+enum UserStatus {
+  FREE
+  PAID
 }

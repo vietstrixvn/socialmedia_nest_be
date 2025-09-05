@@ -1,6 +1,6 @@
 export enum UserStatus {
-  FREE = 'free', // Người dùng free
-  PAID = 'paid', // Người dùng trả phí
+  FREE = 'free',
+  PAID = 'paid',
 }
 
 export enum PropertyStatus {
