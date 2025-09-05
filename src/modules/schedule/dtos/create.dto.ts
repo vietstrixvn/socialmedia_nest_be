@@ -1,25 +1,19 @@
-import {
-  IsDateString,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
-import { Types } from 'mongoose';
+import { Field } from '@nestjs/graphql';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateScheduleDto {
   @IsNotEmpty()
   @IsString()
   post_id: string;
 
-  @IsNotEmpty()
-  @IsString()
-  platform_id: string;
+  @Field({ nullable: true })
+  platform_id?: string;
 
+  @Field({ nullable: true })
+  scheduled_at?: string;
+
+  @Field({ nullable: true })
   @IsOptional()
   @IsString()
-  credential_id?: Types.ObjectId | string;
-
-  @IsNotEmpty()
-  @IsDateString()
-  scheduled_at: Date | string;
+  credential_id?: string;
 }

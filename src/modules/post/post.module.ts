@@ -9,6 +9,7 @@ import { RedisCacheModule } from '../cache/redis-cache.module';
 import { PlatformModule } from '../platform/platform.module';
 import { PropertyModule } from '../property/property.module';
 import { PostController } from './post.contronller';
+import { PostResolver } from './post.resolver';
 import { PostService } from './post.service';
 
 @Module({
@@ -22,7 +23,7 @@ import { PostService } from './post.service';
     PropertyModule,
   ],
   controllers: [PostController],
-  providers: [PostService],
+  providers: [PostService, PostResolver],
   exports: [PostService],
 })
 export class PostModule {}

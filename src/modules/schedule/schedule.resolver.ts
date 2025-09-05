@@ -3,11 +3,11 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { GqlJwtAuthGuard } from 'src/common/guard/gql.guard';
 import { ScheduleGraph } from 'src/models/schedule.model';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { PaginationScheduleGraph } from '../paginate/pagination-schedule.model';
 import { PaginationOptionsInput } from '../paginate/pagination.options.interface';
 import { UserLiteData } from '../user/responeses/user.response';
 import { CreateScheduleInput } from './dtos/create-schedule.input';
 import { CreateScheduleDto } from './dtos/create.dto';
+import { PaginationScheduleGraph } from './responses/schedule.graph';
 import { ScheduleService } from './schedule.service';
 
 @Resolver(() => ScheduleGraph)
@@ -15,7 +15,7 @@ export class ScheduleResolver {
   constructor(private readonly scheduleService: ScheduleService) {}
 
   // ============================
-  // Query: Lấy danh sách schedules theo post
+  // Query: Get list of schedules by post
   // ============================
   @Query(() => PaginationScheduleGraph, { name: 'schedulesByPost' })
   @UseGuards(GqlJwtAuthGuard)
@@ -60,7 +60,7 @@ export class ScheduleResolver {
   }
 
   // ============================
-  // Query: Lấy danh sách schedules theo property
+  // Query: Get list of schedules by property
   // ============================
   @Query(() => PaginationScheduleGraph, { name: 'schedulesByProperty' })
   @UseGuards(GqlJwtAuthGuard)
@@ -104,9 +104,9 @@ export class ScheduleResolver {
   }
 
   // ============================
-  // Mutation: Tạo schedule mới
+  // Mutation: Create new schedule
   // ============================
-  @Mutation(() => ScheduleGraph)
+  @Mutation(() => ScheduleGraph, { name: 'createSchedule' })
   @UseGuards(GqlJwtAuthGuard)
   async createSchedule(
     @Args('input') input: CreateScheduleInput,
@@ -116,11 +116,10 @@ export class ScheduleResolver {
       throw new UnauthorizedException('User not authenticated');
     }
 
-    // Ép kiểu GraphQL input sang DTO để service nhận type-safe
     const dto: CreateScheduleDto = {
       post_id: input.post_id,
-      platform_id: input.platform_id!, // dấu ! vì mutation luôn cần field này
-      scheduled_at: input.scheduled_at!, // dấu ! vì mutation luôn cần field này
+      platform_id: input.platform_id!,
+      scheduled_at: input.scheduled_at!,
     };
 
     const result = await this.scheduleService.create(dto, user);

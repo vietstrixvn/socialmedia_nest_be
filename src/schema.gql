@@ -2,6 +2,14 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input CreatePostInput {
+  media_urls: [String!]
+  platforms: [String!]
+  propertyId: String!
+  schedules: [String!]
+  text: String!
+}
+
 input CreateScheduleInput {
   credential_id: String
   platform_id: String
@@ -15,6 +23,7 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 scalar DateTime
 
 type Mutation {
+  createPost(input: CreatePostInput!): PostGraph!
   createSchedule(input: CreateScheduleInput!): ScheduleGraph!
 }
 
@@ -30,9 +39,47 @@ input PaginationOptionsInput {
   page_size: Int! = 10
 }
 
+type PaginationPostGraph {
+  edges: [PostEdge!]!
+  pageInfo: PageInfo!
+}
+
 type PaginationScheduleGraph {
   edges: [ScheduleEdge!]!
   pageInfo: PageInfo!
+}
+
+type PostEdge {
+  cursor: String!
+  node: PostGraph!
+}
+
+type PostGraph {
+  countAll: Float!
+  created_by: String
+  failedCount: Float!
+  id: ID!
+  media_urls: [String!]
+  overallPublishStatus: String!
+  pendingCount: Float!
+  platforms: [String!]
+  propertyId: String!
+  publishResults: [PublishResultGraph!]
+  publishedAt: DateTime
+  status: Status!
+  successCount: Float!
+  text: String!
+}
+
+type PublishResultGraph {
+  errorCode: String
+  errorMessage: String
+  lastRetryAt: DateTime
+  platform: String!
+  platformPostId: String
+  publishedAt: DateTime
+  retryCount: Float!
+  status: PublishStatus!
 }
 
 enum PublishStatus {
@@ -43,6 +90,7 @@ enum PublishStatus {
 }
 
 type Query {
+  postsByProperty(endDate: String, options: PaginationOptionsInput!, propertyId: String!, startDate: String): PaginationPostGraph!
   schedulesByPost(endDate: String, options: PaginationOptionsInput!, postId: String!, startDate: String): PaginationScheduleGraph!
   schedulesByProperty(endDate: String, options: PaginationOptionsInput!, propertyId: String!, startDate: String): PaginationScheduleGraph!
 }
@@ -63,4 +111,10 @@ type ScheduleGraph {
   propertyId: String!
   scheduled_at: String!
   status: PublishStatus!
+}
+
+enum Status {
+  Approved
+  Pending
+  Rejected
 }

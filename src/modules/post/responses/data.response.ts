@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { Status } from 'src/entities/system-log.entity';
+import { Status } from 'src/common';
 
 export interface PublishResultResponse {
   platform: string; // platformId
@@ -21,10 +21,8 @@ export interface PostResponse {
   created_at: Date;
   updated_at: Date;
 
-  // Thay cho platforms[]
   publishResults: PublishResultResponse[];
 
-  // Thêm mấy cái virtual count cho tiện admin
   successCount: number;
   failedCount: number;
   pendingCount: number;

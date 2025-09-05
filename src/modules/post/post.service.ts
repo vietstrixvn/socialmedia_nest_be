@@ -6,16 +6,17 @@ import { RedisCacheService } from '../cache/redis-cache.service';
 
 import { StatusCode, StatusType } from 'src/common';
 import { PostDocument, PostEntity } from 'src/entities/post.entity';
-import { buildPostFilter } from 'src/helpers/post.helper';
 import { toPostResponse } from 'src/mappers/post.mapper';
 import { buildCacheKey } from 'src/utils/cache-key.util';
 import { Pagination } from '../paginate/pagination';
-import { PaginationOptionsInterface } from '../paginate/pagination.options.interface';
+import {
+  GraphPagination,
+  PaginationOptionsInterface,
+} from '../paginate/pagination.options.interface';
 import { PlatformService } from '../platform/platform.service';
 import { PropertyService } from '../property/property.service';
 import { UserLiteData } from '../user/responeses/user.response';
 import { CreatePostDto } from './dtos/create.dto';
-import { POST_CACHE_TTL } from './post.constant';
 import { CreatePostResponse } from './responses/create.response';
 import { PostResponse, PublishStatus } from './responses/data.response';
 
@@ -88,60 +89,60 @@ export class PostService {
     }
   }
 
-  async findAll(
-    options: PaginationOptionsInterface,
-    startDate?: string,
-    endDate?: string,
-  ): Promise<Pagination<PostResponse>> {
-    const cacheKey = buildCacheKey('posts', {
-      page: options.page,
-      page_size: options.page_size,
-      start: startDate,
-      end: endDate,
-    });
+  // async findAll(
+  //   options: PaginationOptionsInterface,
+  //   startDate?: string,
+  //   endDate?: string,
+  // ): Promise<Pagination<PostResponse>> {
+  //   const cacheKey = buildCacheKey('posts', {
+  //     page: options.page,
+  //     page_size: options.page_size,
+  //     start: startDate,
+  //     end: endDate,
+  //   });
 
-    const cached =
-      await this.redisCacheService.get<Pagination<PostResponse>>(cacheKey);
+  //   const cached =
+  //     await this.redisCacheService.get<Pagination<PostResponse>>(cacheKey);
 
-    if (cached) {
-      this.logger.log(`Cache HIT: ${cacheKey}`);
-      return cached;
-    }
+  //   if (cached) {
+  //     this.logger.log(`Cache HIT: ${cacheKey}`);
+  //     return cached;
+  //   }
 
-    const filter = {
-      ...buildPostFilter({ startDate, endDate }),
-    };
+  //   const filter = {
+  //     ...buildPostFilter({ startDate, endDate }),
+  //   };
 
-    const properties = await this.postModel
-      .find(filter)
-      .skip((options.page - 1) * options.page_size)
-      .populate({
-        path: 'platforms',
-        select: '_id name',
-      })
-      .limit(options.page_size)
-      .sort({ createdAt: -1 })
-      .exec();
+  //   const properties = await this.postModel
+  //     .find(filter)
+  //     .skip((options.page - 1) * options.page_size)
+  //     .populate({
+  //       path: 'platforms',
+  //       select: '_id name',
+  //     })
+  //     .limit(options.page_size)
+  //     .sort({ createdAt: -1 })
+  //     .exec();
 
-    const total = await this.postModel.countDocuments(filter);
+  //   const total = await this.postModel.countDocuments(filter);
 
-    const mappedProperties = properties.map(toPostResponse);
+  //   const mappedProperties = properties.map(toPostResponse);
 
-    const result = new Pagination<PostResponse>({
-      results: mappedProperties,
-      total,
-      total_page: Math.ceil(total / options.page_size),
-      page_size: options.page_size,
-      current_page: options.page,
-    });
+  //   const result = new Pagination<PostResponse>({
+  //     results: mappedProperties,
+  //     total,
+  //     total_page: Math.ceil(total / options.page_size),
+  //     page_size: options.page_size,
+  //     current_page: options.page,
+  //   });
 
-    await this.redisCacheService.set(
-      cacheKey,
-      result,
-      POST_CACHE_TTL.POST_LIST,
-    );
-    return result;
-  }
+  //   await this.redisCacheService.set(
+  //     cacheKey,
+  //     result,
+  //     POST_CACHE_TTL.POST_LIST,
+  //   );
+  //   return result;
+  // }
 
   async findByProperty(
     options: PaginationOptionsInterface,
@@ -178,6 +179,62 @@ export class PostService {
 
     const result = new Pagination<PostResponse>({
       results: mappedPosts,
+      total,
+      total_page: Math.ceil(total / options.page_size),
+      page_size: options.page_size,
+      current_page: options.page,
+    });
+
+    await this.redisCacheService
+      .set(cacheKey, result, 3600)
+      .catch((err) => this.logger.error(`Failed to cache ${cacheKey}`, err));
+
+    return result;
+  }
+
+  async graphFindByProperty(
+    options: PaginationOptionsInterface,
+    propertyId: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<GraphPagination<PostResponse>> {
+    const cacheKey = buildCacheKey('posts_property${propertyId}', {
+      page: options.page,
+      page_size: options.page_size,
+      start: startDate,
+      end: endDate,
+      propertyID: propertyId,
+    });
+    const cached =
+      await this.redisCacheService.get<GraphPagination<PostResponse>>(cacheKey);
+
+    if (cached) {
+      this.logger.log(`Cache HIT: ${cacheKey}`);
+      return cached;
+    }
+
+    const property = await this.propertyService.validateProperty(propertyId);
+    if (!property) {
+      throw new BadRequestException({
+        statusCode: StatusCode.BadRequest,
+        message: 'Not Found or Not Allowed',
+        error: 'Not Found',
+      });
+    }
+
+    const posts = await this.postModel.find({ propertyId });
+
+    const filter: any = {
+      propertyId, // vì giờ schedule đã có propertyId
+    };
+
+    // .populate({ path: 'schedules', select: '_id scheduled_at' })
+    //
+    const total = await this.postModel.countDocuments(filter);
+    const mappedPosts = posts.map(toPostResponse);
+
+    const result = new GraphPagination<PostResponse>({
+      items: mappedPosts,
       total,
       total_page: Math.ceil(total / options.page_size),
       page_size: options.page_size,

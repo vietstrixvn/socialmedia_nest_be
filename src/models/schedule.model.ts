@@ -22,7 +22,7 @@ export class ScheduleGraph {
   @Field(() => String)
   scheduled_at: string;
 
-  @Field(() => PublishStatus) // 👈 đổi nè
+  @Field(() => PublishStatus)
   status: PublishStatus;
 
   @Field(() => String, { nullable: true })

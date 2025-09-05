@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { Status } from 'src/common';
 import { COLLECTION_KEYS } from 'src/database/collections';
 import {
   PostStatus,
@@ -7,7 +8,6 @@ import {
   PublishStatus,
 } from 'src/modules/post/responses/data.response';
 import { Base } from './base.entity';
-import { Status } from './system-log.entity';
 
 @Schema()
 export class PostEntity extends Base {
@@ -15,7 +15,7 @@ export class PostEntity extends Base {
   text: string;
 
   @Prop({ type: [String], required: false })
-  media_urls?: string[]; // lưu đường dẫn file thay vì object File
+  media_urls?: string[];
 
   @Prop({ enum: Status, default: Status.Pending })
   status: Status;

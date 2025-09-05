@@ -38,7 +38,7 @@ import { AppService } from './app.service';
       sortSchema: true,
       playground: true,
       context: ({ req }) => ({ req }),
-      path: '/api/schedule',
+      path: '/api/graph',
     }),
     CacheModule.registerAsync({
       isGlobal: true,

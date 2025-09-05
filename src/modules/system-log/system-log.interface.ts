@@ -1,9 +1,12 @@
-import { Status, SystemLogType } from '../../entities/system-log.entity';
+import {
+  SystemLogStatus,
+  SystemLogType,
+} from '../../entities/system-log.entity';
 
 export interface CreateSystemLogDTO {
   type: SystemLogType;
   note: string;
-  status: Status;
+  status: SystemLogStatus;
   data?: any;
 }
 
