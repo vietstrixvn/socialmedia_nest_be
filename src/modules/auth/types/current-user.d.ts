@@ -1,5 +1,5 @@
 export type CurrentUser = {
-  id: number;
+  id: string;
   isActive: boolean;
   isBlocked: boolean;
   username?: string;

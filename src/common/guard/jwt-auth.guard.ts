@@ -23,9 +23,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err, user, info) {
-    // Nếu token không hợp lệ
     if (err || !user) {
-      // ném lỗi tuỳ ý
       throw new UnauthorizedException({
         status: 401,
         message: info?.message || 'Token is invalid or expired',

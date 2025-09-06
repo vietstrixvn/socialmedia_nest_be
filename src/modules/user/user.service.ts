@@ -26,16 +26,6 @@ export class UserService {
     // private readonly emailPasswordService: EmailPasswordService,
   ) {}
 
-  async updateHashedRefreshToken(
-    _id: string,
-    hashedRefreshToken: string | null,
-  ) {
-    return await this.userModel.updateOne(
-      { _id },
-      { $set: { hashedRefreshToken } },
-    );
-  }
-
   async create(createUserDto: CreateUserLocalDto) {
     const user = new this.userModel({
       ...createUserDto,

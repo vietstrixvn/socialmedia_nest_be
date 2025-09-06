@@ -20,6 +20,7 @@ import { RedisCacheModule } from '../cache/redis-cache.module';
 import { AuthController } from './auth.controller';
 import { GithubStrategy } from './strategies/github.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { RefreshJwtStrategy } from './strategies/refresh.strategy';
 
 @Module({
   imports: [
@@ -39,7 +40,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
     UserService,
     LocalStrategy,
     JwtStrategy,
-    // RefreshJwtStrategy,
+    RefreshJwtStrategy,
     GoogleStrategy,
     GithubStrategy,
     JwtAuthGuard,

@@ -1,6 +1,5 @@
-// generate-tokens.util.ts
-import { JwtService } from '@nestjs/jwt';
 import { ConfigType } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import refreshJwtConfig from 'src/configs/refresh-jwt.config';
 import { AuthJwtPayload } from 'src/modules/auth/types/auth-jwtPayload';
 

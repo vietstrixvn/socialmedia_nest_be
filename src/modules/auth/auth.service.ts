@@ -13,6 +13,7 @@ import { Model } from 'mongoose';
 import { UserRole } from 'src/common';
 import { Provider } from 'src/common/enums/provider.enum';
 import { UserDocument, UserEntity } from 'src/entities/user.entity';
+import { logDebug } from 'src/logger/console';
 import { generateTokens } from 'src/middlewares/generateTokens.middleware';
 import {
   CreateUserGithubDto,
@@ -71,7 +72,6 @@ export class AuthService {
       this.refreshTokenConfig,
     );
     const hashedRefreshToken = await argon2.hash(refreshToken);
-    await this.userService.updateHashedRefreshToken(_id, hashedRefreshToken);
     return {
       id: _id,
       accessToken,
@@ -100,14 +100,8 @@ export class AuthService {
 
     const { accessToken, refreshToken } = await generateTokens(
       user._id.toString(),
-      this.jwtService, // ← truyền cái này nè
-      this.refreshTokenConfig, // ← và cái này nữa
-    );
-
-    const hashedRefreshToken = await argon2.hash(refreshToken);
-    await this.userService.updateHashedRefreshToken(
-      user._id.toString(),
-      hashedRefreshToken,
+      this.jwtService,
+      this.refreshTokenConfig,
     );
 
     return {
@@ -117,21 +111,14 @@ export class AuthService {
     };
   }
 
-  async refreshToken(_id: string) {
+  async authRefresh(currentUser: CurrentUser) {
     const { accessToken, refreshToken } = await generateTokens(
-      _id,
+      currentUser.id,
       this.jwtService,
       this.refreshTokenConfig,
     );
 
-    const hashedRefreshToken = await argon2.hash(refreshToken);
-    await this.userService.updateHashedRefreshToken(_id, hashedRefreshToken);
-
-    return {
-      id: _id,
-      accessToken,
-      refreshToken,
-    };
+    return { accessToken, refreshToken };
   }
 
   async createUserAccount() {
@@ -173,10 +160,6 @@ export class AuthService {
     }
   }
 
-  async signOut(_id: string) {
-    await this.userService.updateHashedRefreshToken(_id, null);
-  }
-
   async validateJwtUser(_id: string) {
     const user = await this.userService.findOne(_id);
     if (!user) throw new UnauthorizedException('User not found!');
@@ -190,19 +173,44 @@ export class AuthService {
     return currentUser;
   }
 
+  async validateRefreshToken(
+    _id: string,
+    refreshToken: string,
+  ): Promise<CurrentUser> {
+    const user = await this.userService.findOne(_id);
+    if (!user) throw new UnauthorizedException('Invalid User');
+
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.refreshTokenConfig.secret,
+      });
+
+      // Debug log để xem payload thực tế
+      logDebug('🔍 Token payload:', JSON.stringify(payload, null, 2));
+
+      const currentUser: CurrentUser = {
+        id: payload.sub,
+        username: user.username || user.email,
+        email: user.email,
+        isActive: user.isActive,
+        isBlocked: user.isBlocked,
+      };
+
+      return currentUser;
+    } catch (err) {
+      console.log('Token validation error:', err);
+      throw new UnauthorizedException('Invalid or expired refresh token!');
+    }
+  }
   async validateGoogleUser(googleUser: CreateUserGoogleDto) {
-    // 👀 Ưu tiên tìm theo providerId trước
     let user = await this.userService.findByProviderId(googleUser.sub);
 
-    // 👀 Nếu chưa có thì fallback tìm theo email
     if (!user) {
       user = await this.userService.findByEmail(googleUser.email);
     }
 
-    // ✅ Nếu đã tồn tại thì return
     if (user) return user;
 
-    // ❗ Tạo mới nếu chắc chắn chưa tồn tại
     return await this.userService.ggCreate({
       ...googleUser,
       provider: Provider.Google,
@@ -212,14 +220,11 @@ export class AuthService {
   }
 
   async validateGithubUser(githubUser: CreateUserGithubDto) {
-    // 👀 Ưu tiên tìm theo providerId trước (GitHub user id)
     let user = await this.userService.findByProviderId(githubUser.providerId);
 
-    // 👀 Nếu chưa có, thử tìm theo email (nếu có email)
     if (!user && githubUser.email) {
       user = await this.userService.findByEmail(githubUser.email);
 
-      // ⚠️ Check nếu user này đã có provider khác (local, Google...) thì không override
       if (user && user.provider !== Provider.Github) {
         throw new UnauthorizedException(
           `Email này đã được đăng ký bằng ${user.provider}, không thể dùng GitHub để đăng nhập.`,
@@ -227,10 +232,8 @@ export class AuthService {
       }
     }
 
-    // ✅ Nếu user đã tồn tại thì return
     if (user) return user;
 
-    // ❗ Nếu chắc chắn chưa có, thì tạo mới
     return await this.userService.ghCreate({
       ...githubUser,
       provider: Provider.Github,

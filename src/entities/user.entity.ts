@@ -60,6 +60,7 @@ export class UserEntity extends Base {
 
   @Prop({ default: false })
   verified: boolean;
+  
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserEntity);

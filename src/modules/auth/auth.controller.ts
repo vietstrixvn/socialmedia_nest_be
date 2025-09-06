@@ -4,25 +4,26 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Post,
   Req,
   Request,
   Res,
-  Logger,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { JwtAuthGuard } from 'src/common';
+import { logDebug } from 'src/logger/console';
+import { logger } from 'src/logger/logger';
+import { PublicRoute } from '../../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
+import { LogInDTO } from './dtos/log-in.dto';
+import { GithubAuthGuard } from './guards/github-auth/github-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
-import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
-import { LogInDTO } from './dtos/log-in.dto';
 import { LogInResponse } from './responeses/log-in.response';
-import { Response } from 'express';
-import { PublicRoute } from '../../common/decorators/public.decorator';
-import { JwtAuthGuard } from 'src/common';
-import { GithubAuthGuard } from './guards/github-auth/github-auth.guard';
-import { logger } from 'src/logger/logger';
-import { logDebug } from 'src/logger/console';
+import { CurrentUser } from './types/current-user';
 
 @Controller('auth')
 export class AuthController {
@@ -38,25 +39,26 @@ export class AuthController {
     return this.authService.login(req.user.id);
   }
 
-  @UseGuards(RefreshAuthGuard)
   @Post('refresh')
-  refreshToken(@Req() req, @Res({ passthrough: true }) res: Response) {
-    return this.authService
-      .refreshToken(req.user.id)
-      .then(({ accessToken, refreshToken }) => {
-        res.cookie('refresh_auth_token', refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
+  @UseGuards(RefreshAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async authRefresh(@Req() req, @Res({ passthrough: true }) res: Response) {
+    const currentUser = req.user as CurrentUser;
 
-        logger.info(
-          `🔐 Login attempt - ID: ${req.user.id} | Method: refresh-login`,
-        );
-        logDebug('[TOKEN]', accessToken);
+    const { accessToken, refreshToken } =
+      await this.authService.authRefresh(currentUser);
 
-        return { accessToken }; // 👈 chỉ trả accessToken, refresh giữ ở cookie
-      });
+    res.cookie('refresh_auth_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    this.logger.debug(`🔐 Refresh - ID: ${currentUser.id}`);
+    logDebug('[TOKEN]', accessToken);
+
+    return { accessToken };
   }
 
   @PublicRoute()
@@ -87,8 +89,10 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('signout')
-  signOut(@Req() req) {
-    this.authService.signOut(req.user.id);
+  signOut(@Req() req, @Res({ passthrough: true }) res: Response) {
+    res.clearCookie('refresh_auth_token');
+
+    return { message: 'Signed out successfully' };
   }
 
   // Google Login

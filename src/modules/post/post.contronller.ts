@@ -52,16 +52,6 @@ export class PostController {
   async create(@Body() createFaqDto: CreatePostDto, @Req() req) {
     const category = await this.postService.create(createFaqDto, req.user);
 
-    // await this.systemLogService.log({
-    //   type: SystemLogType.CategoryCreated,
-    //   note: `User ${req.user.email} created a new CATEGORY.`,
-    //   status: Status.Success,
-    //   data: {
-    //     user: req.user,
-    //     id: category.result._id,
-    //     title: category.result.name,
-    //   },
-    // });
 
     return category;
   }
