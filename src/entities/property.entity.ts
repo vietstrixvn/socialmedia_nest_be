@@ -21,12 +21,6 @@ export class PropertyEntity extends Base {
   })
   platforms: Types.ObjectId[];
 
-  // @Prop({
-  //   type: [{ type: [String], ref: COLLECTION_KEYS.SCHEDULED }],
-  //   default: [],
-  // })
-  // schedules: Types.ObjectId[];
-
   @Prop({
     type: String,
     enum: Object.values(PropertyStatus),

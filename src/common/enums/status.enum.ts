@@ -5,10 +5,10 @@ export enum UserStatus {
 
 export enum PropertyStatus {
   FREE = 'free',
-  ACTIVE = 'active', // Dùng bình thường (free hoặc trả phí)
-  PENDING_PAYMENT = 'pending_payment', // Đợi thanh toán, vẫn dùng được nhưng giới hạn
-  PAUSED = 'paused', // Tạm khóa do chưa thanh toán
-  DELETED_DUE_TO_EXPIRY = 'deleted_due_to_expiry', // Khóa/xóa tạm thời
+  ACTIVE = 'active',
+  PENDING_PAYMENT = 'pending_payment',
+  PAUSED = 'paused',
+  DELETED_DUE_TO_EXPIRY = 'deleted_due_to_expiry',
 }
 
 export enum PropertyType {

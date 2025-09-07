@@ -28,7 +28,6 @@ export class PostService {
     private readonly postModel: Model<PostDocument>,
     private readonly redisCacheService: RedisCacheService,
     private readonly propertyService: PropertyService,
-
     private readonly platformService: PlatformService,
   ) {}
 

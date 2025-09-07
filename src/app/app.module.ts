@@ -1,15 +1,19 @@
 import { CacheModule } from '@nestjs/cache-manager';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { redisConfig, setupConfig } from 'src/configs/app';
 import { DatabaseModule } from 'src/database/database.module';
 import { ApiKeyMiddleware } from 'src/middlewares/api-key.middleware';
+import { CorsMiddleware } from 'src/middlewares/cors.middleware';
+import { RateLimitMiddleware } from 'src/middlewares/rate-limiter.middleware';
 import { AdminModule } from 'src/modules/admin/admin.module';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { RedisCacheModule } from 'src/modules/cache/redis-cache.module';
+import { CategoryModule } from 'src/modules/category/category.module';
 import { ContactModule } from 'src/modules/contact/contact.module';
 import { CredentialModule } from 'src/modules/credential/credential.module';
+import { DocumentModule } from 'src/modules/document/document.module';
 import { PlatformModule } from 'src/modules/platform/platform.module';
 import { PostModule } from 'src/modules/post/post.module';
 import { PropertyModule } from 'src/modules/property/property.module';
@@ -48,7 +52,8 @@ import { AppService } from './app.service';
     // Admin & SuperUser
     AdminModule,
     SuperUserModule,
-
+    CategoryModule,
+    DocumentModule,
     ContactModule,
     SystemLogModule,
 
@@ -71,4 +76,14 @@ import { AppService } from './app.service';
     ApiKeyMiddleware,
   ],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Request logger middleware
+
+    // consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+
+    consumer.apply(CorsMiddleware).forRoutes('*');
+
+    consumer.apply(RateLimitMiddleware).forRoutes('*');
+  }
+}

@@ -13,4 +13,6 @@ export const COLLECTION_KEYS = {
   PROPERTY: process.env.PROPERTY_COLLECTION || 'properties',
   CONTACT: process.env.CONTACT_COLLECTION || 'contacts',
   USER_PROPERTY: process.env.USER_PROPERTY_COLLECTION || 'user_properties',
+  DOCUMENT: process.env.DOCUMENT_COLLECTION || 'documents',
+  CATEGORY: process.env.CATEGORY_COLLECTION || 'categories',
 };
